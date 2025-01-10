@@ -1,0 +1,33 @@
+.DS_Store
+.env
+.env.*
+eval_*
+market_data*
+oldies
+optim_*
+debug.log*
+info.log*
+version-*zip
+Goodies
+
+
+# Ignore local environment files
+*.env
+
+# Ignore logs
+*.log
+
+# Ignore system files
+.DS_Store
+Thumbs.db
+
+# Ignore Python cache files (if it's a Python project)
+__pycache__/
+*.py[cod]
+
+# Ignore node_modules (if using Node.js)
+node_modules/
+
+# Ignore IDE config files
+.vscode/
+.idea/
