@@ -216,7 +216,7 @@ def on_open(ws):
     close_all_open_trades()
     
     financial_params = selected_params
-    financial_params['interval'] = '12h'  # for debugging
+    financial_params['interval'] = '5m'  # for debugging
     # financial_params['cooldown_period'] = 2
     # financial_params['kelly_fraction'] = 0.5
     # financial_params['risk_per_trade'] = 0.018
