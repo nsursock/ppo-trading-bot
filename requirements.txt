@@ -3,7 +3,7 @@ Cython==3.0.11
 eth_abi==5.1.0
 eth_utils==5.1.0
 gymnasium==1.0.0
-matplotlib==3.10.0
+matplotlib==3.9.2
 #numba==0.60.0
 numpy==1.26.4
 pandas==2.2.3
