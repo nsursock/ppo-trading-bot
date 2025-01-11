@@ -843,6 +843,7 @@ class TradingEnvironment(gym.Env):
             reward = self.net_worth - self.params['initial_balance']
 
         # info = {'balance': self.balance, 'net_worth': self.net_worth}
+        logging.info(f"balance: {self.balance}, net_worth: {self.net_worth}, balance_below_min: {balance_below_min}")
 
         # Return next observation, reward, done, and info
         return self.next_observation(), reward, done, balance_below_min, infos
