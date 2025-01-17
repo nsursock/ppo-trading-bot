@@ -17,31 +17,40 @@ from utilities import send_error_email
 # # Configure logging
 # logging.basicConfig(level=logging.INFO)
 
-# Load environment variables from .env file
-load_dotenv()
+# Initialize data storage
+# data = {}
 
-# Initialize ccxt Binance exchange
-binance = ccxt.binance()
+def setup_env(env_file=None):
+    global web3, contract_address, wallet_address, private_key, contract
 
-# Initialize Web3 with Alchemy URL
-web3 = Web3(Web3.HTTPProvider(os.getenv('ALCHEMY_URL')))
+    # Load environment variables from .env file
+    if env_file:
+        load_dotenv(env_file)
+    else:
+        load_dotenv()
 
-alchemy_url = os.getenv('ALCHEMY_URL')
+    # Initialize ccxt Binance exchange
+    binance = ccxt.binance()
 
-# Contract and Wallet details
-contract_address = os.getenv('SEPOLIA_URL')
-private_key = os.getenv('PRIVATE_KEY')
-wallet_address = web3.eth.account.from_key(private_key).address
+    # Initialize Web3 with Alchemy URL
+    web3 = Web3(Web3.HTTPProvider(os.getenv('ALCHEMY_URL')))
 
-# Define the contract ABI
-with open('./abi.json') as f:
-    contract_abi = json.load(f)
-contract = web3.eth.contract(address=contract_address, abi=contract_abi)
+    alchemy_url = os.getenv('ALCHEMY_URL')
+
+    # Contract and Wallet details
+    contract_address = os.getenv('SEPOLIA_URL')
+    private_key = os.getenv('PRIVATE_KEY')
+    wallet_address = web3.eth.account.from_key(private_key).address
+
+    # Define the contract ABI
+    with open('./abi.json') as f:
+        contract_abi = json.load(f)
+    contract = web3.eth.contract(address=contract_address, abi=contract_abi)
 
 # chain_id = 42161 if args.env == 'prod' else 421614
 
-# Initialize data storage
-data = {}
+def get_nonce():
+    return web3.eth.get_transaction_count(wallet_address, 'pending')
 
 def fetch_open_trades(symbol=None):
     try:
@@ -160,6 +169,8 @@ def close_all_open_trades():
         response = requests.get("https://backend-pricing.eu.gains.trade/charts")
         ohlc_data = response.json()
         
+        nonce = get_nonce()
+        
         # trade_info = []
         for symbol, order_id, is_long in trade_details:
             
@@ -177,7 +188,8 @@ def close_all_open_trades():
             
             # Attempt to close the trade
             try:
-                close_trade(order_id, latest_price, is_long, 0.05)
+                close_trade(nonce, order_id, latest_price, is_long, 0.05)
+                nonce += 1
                 # logging.info(f"Successfully closed trade with order_id: {order_id}")
             except Exception as e:
                 logging.error(f"Failed to close trade with order_id: {order_id}. Error: {e}")
@@ -185,7 +197,7 @@ def close_all_open_trades():
     except Exception as error:
         logging.error('Error in main function:', error)
     
-def close_trade(trade_index, expected_price, is_long, slippage_tolerance=0.01):
+def close_trade(nonce, trade_index, expected_price, is_long, slippage_tolerance=0.01):
     try:
         logging.info(f"Attempting to close trade with trade_index: {trade_index}, expected_price: {expected_price}, is_long: {is_long}")
 
@@ -250,14 +262,13 @@ def close_trade(trade_index, expected_price, is_long, slippage_tolerance=0.01):
         signed_tx = web3.eth.account.sign_transaction(tx_data, private_key)
         tx_hash = web3.eth.send_raw_transaction(signed_tx.raw_transaction)
         logging.debug(f"Transaction sent, hash: {tx_hash.hex()}")
-        # Wait for the transaction receipt
-        receipt = web3.eth.wait_for_transaction_receipt(tx_hash)
-        logging.debug(f"Transaction receipt: {receipt}")
 
+        # Await confirmation
+        receipt = web3.eth.wait_for_transaction_receipt(tx_hash)
         if receipt['status'] == 1:
             logging.info(f"Closed trade with trade_index: {trade_index}, Transaction hash: {receipt.transactionHash.hex()}")
         else:
-            raise Exception("Transaction failed...")
+            logging.error("Transaction failed...")
 
     except ContractLogicError as custom_error:
         logging.error(f"Contract logic error occurred: {custom_error}")
@@ -323,7 +334,7 @@ def decode_revert_reason(error):
     except Exception as e:
         logging.error(f'Failed to decode revert reason: {e}')
 
-def open_trade(latest_close_price, pairs, symbol, action, collateral=200, leverage=10, tp_price=0, sl_price=0):
+def open_trade(nonce, latest_close_price, pairs, symbol, action, collateral=200, leverage=10, tp_price=0, sl_price=0):
     # leverageExperiment = 5
     try: 
         tx_data = None
@@ -447,19 +458,17 @@ def open_trade(latest_close_price, pairs, symbol, action, collateral=200, levera
 
         signed_tx = web3.eth.account.sign_transaction(tx, private_key)
         logging.debug('Signed transaction')
-        tx_hash = web3.eth.send_raw_transaction(signed_tx.raw_transaction)  # Corrected attribute name
+        tx_hash = web3.eth.send_raw_transaction(signed_tx.raw_transaction)
         logging.debug(f'Transaction hash: {web3.to_hex(tx_hash)}')
 
-        # Check for market cancellation
+        # Await confirmation
         receipt = web3.eth.wait_for_transaction_receipt(tx_hash)
-        if receipt['status'] == 0:
-            logging.debug('Market was canceled. Handling cancellation...')
-            # Add your cancellation handling logic here
-            # return -1  # Indicate failure due to market cancellation
-            
-        
-        logging.info(f"Opened trade for symbol: {symbol}, Transaction hash: {receipt.transactionHash.hex()}")
-        return web3.to_hex(tx_hash)  # Return transaction hash on success
+        if receipt['status'] == 1:
+            logging.info(f"Opened trade for symbol: {symbol}, Transaction hash: {receipt.transactionHash.hex()}")
+            return web3.to_hex(tx_hash)  # Return transaction hash on success
+        else:
+            logging.error("Transaction failed...")
+            return None
 
     except ContractLogicError as error:
         logging.error(f'Contract logic error occurred: {error}')

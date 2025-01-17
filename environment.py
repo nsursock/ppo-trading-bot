@@ -303,9 +303,9 @@ class TradingEnvironment(gym.Env):
         return win_probability, win_loss_ratio
 
     def open_position(self, symbol_index, type, current_price):
-        if self.cooldowns[symbol_index] > 0:
-            logging.debug(f"Cannot open position for symbol {symbol_index} due to cooldown.")
-            return None, None, None, None  # Ensure a tuple is returned
+        # if self.cooldowns[symbol_index] > 0:
+        #     logging.debug(f"Cannot open position for symbol {symbol_index} due to cooldown.")
+        #     return None, None, None, None  # Ensure a tuple is returned
 
         # Calculate win probability and win/loss ratio from history
         win_probability, win_loss_ratio = self.calculate_trade_statistics()
@@ -314,11 +314,15 @@ class TradingEnvironment(gym.Env):
         kelly_fraction = self.calculate_kelly_fraction(win_probability, win_loss_ratio, self.params['kelly_fraction'])
 
         # Adjust risk per trade using the Kelly fraction
-        risk_per_trade = kelly_fraction if win_loss_ratio != 0 else self.params['risk_per_trade']
+        risk_per_trade = kelly_fraction if kelly_fraction != 0 else self.params['risk_per_trade']
         
         # Progressive collateral calculation: start with a lower percentage of the balance
-        initial_collateral_factor = 0.1  # Start with 10% of the balance
+        initial_collateral_factor = risk_per_trade #0.1  # Start with 10% of the balance
         collateral = max(self.params['collateral_min'], min(initial_collateral_factor * self.balance, self.params['collateral_max']))
+
+        # if collateral is None:
+        #     print(f"Collateral is None for symbol {symbol_index}")
+        #     print(f"Risk per trade: {risk_per_trade}, Balance: {self.balance}, Kelly fraction: {kelly_fraction}")
 
         leverage = self.calculate_leverage(symbol_index, collateral)[self.current_step]
         if self.params['adjust_leverage']:
@@ -356,7 +360,9 @@ class TradingEnvironment(gym.Env):
             'liq_price': liq_price,
             'max_price': max_price,
             'borrowing_fee': borrowing_fee,  # Added borrowing_fee to position data
-            'trailing_stop': None  # Initialize trailing stop
+            'trailing_stop': None,  # Initialize trailing stop
+            'balance': self.balance,
+            'risk_per_trade': risk_per_trade,
         }
         self.balance -= collateral
         self.cooldowns[symbol_index] = self.cooldown_period  # Set cooldown after opening a position
@@ -437,6 +443,8 @@ class TradingEnvironment(gym.Env):
             'pnl': round(pnl, 2),  # Add PnL to history
             'return': round(return_on_investment, 2),  # Add return to history
             'borrowing_fee': round(total_borrowing_fee, 2),
+            'balance': position['balance'],
+            'risk_per_trade': position['risk_per_trade'],
         })
         
         # Reset position to an empty dictionary
@@ -773,6 +781,12 @@ class TradingEnvironment(gym.Env):
         action = action.flatten()
 
         logging.debug(f"Step {self.current_step} called with action: {action} (type: {type(action)})")
+        
+        # Check if balance is below minimum and set action to hold if true
+        # if self.balance < self.params['collateral_min']:
+        #     logging.debug("Balance below minimum, setting all actions to hold.")
+        #     action[:] = self.actions_available['hold']
+
 
         # Execute action for each symbol
         for i in range(self.num_symbols):
@@ -784,30 +798,30 @@ class TradingEnvironment(gym.Env):
                 action[i] = self.actions_available['hold']
                 continue
             
-            if action[i] == self.actions_available['hold'] or (self.params['reverse_actions'] and action[i] == self.actions_available['close']):  # Hold
+            if action[i] == self.actions_available['hold']:  # Hold
                 pass
-            elif action[i] == self.actions_available['long'] or (self.params['reverse_actions'] and action[i] == self.actions_available['short']):  # Long
+            elif self.balance >= self.params['collateral_min'] and action[i] == self.actions_available['long']:  # Long
                 if self.positions[i]:
                     self.close_position(i, current_prices[i], 'long')
                 collateral, leverage, tp_price, sl_price = self.open_position(i, 'long', current_prices[i])
                 infos[self.params['symbols'][i]] = { 'type': 'open_long', 'collateral': collateral, 'leverage': leverage, 'tp_price': tp_price, 'sl_price': sl_price }
-            elif action[i] == self.actions_available['short'] or (self.params['reverse_actions'] and action[i] == self.actions_available['long']):  # Short
+            elif self.balance >= self.params['collateral_min'] and action[i] == self.actions_available['short']:  # Short
                 if self.positions[i]:
                     self.close_position(i, current_prices[i], 'short')
                 collateral, leverage, tp_price, sl_price = self.open_position(i, 'short', current_prices[i])
                 infos[self.params['symbols'][i]] = { 'type': 'open_short', 'collateral': collateral, 'leverage': leverage, 'tp_price': tp_price, 'sl_price': sl_price }
-            elif action[i] == self.actions_available['close'] or (self.params['reverse_actions'] and action[i] == self.actions_available['hold']):  # Close
+            elif action[i] == self.actions_available['close']:  # Close
                 if self.positions[i]:
                     self.close_position(i, current_prices[i], 'close')
                     infos[self.params['symbols'][i]] = { 'type': 'close', 'exit_price': current_prices[i] }
-            elif action[i] == self.actions_available['hedge']:  # Hedge
+            elif self.balance >= self.params['collateral_min'] and action[i] == self.actions_available['hedge']:  # Hedge
                 if self.positions[i]:
                     current_type = 'long' if self.positions[i]['type'] == 'short' else 'short'
                     self.close_position(i, current_prices[i], current_type)
                     collateral, leverage, tp_price, sl_price = self.open_position(i, current_type, current_prices[i])
                     infos[self.params['symbols'][i]] = { 'type': f'open_{current_type}', 'collateral': collateral, 'leverage': leverage, 'tp_price': tp_price, 'sl_price': sl_price }
-            elif action[i] == self.actions_available['trail']:  # Trailing Stop
-                self.update_trailing_stop(i, current_prices[i])
+            # elif action[i] == self.actions_available['trail']:  # Trailing Stop
+            #     self.update_trailing_stop(i, current_prices[i])
 
         # Update net worth
         self.net_worth = self.balance + sum(
@@ -825,14 +839,14 @@ class TradingEnvironment(gym.Env):
 
         # Check if the episode is done
         max_steps_reached = self.current_step >= self.data_matrix.shape[0] - 1
-        balance_below_min = self.balance < self.params['collateral_min']
-        done = (max_steps_reached or balance_below_min) and not self.live_mode
+        net_worth_below_min = self.net_worth < self.params['collateral_min']
+        done = (max_steps_reached or net_worth_below_min) and not self.live_mode
 
         # Increment episode counter if done
         if done and not self.live_mode:
             logging.debug(f"Episode {self.episode_counter} completed.")
-            if balance_below_min:
-                logging.debug(f"max_steps_reached: {max_steps_reached}, balance_below_min: {balance_below_min}")
+            if net_worth_below_min:
+                logging.debug(f"max_steps_reached: {max_steps_reached}, net_worth_below_min: {net_worth_below_min}")
                 self.episodes_below_min_balance += 1  # Increment counter for episodes with balance below min
             self.episode_counter += 1
 
@@ -843,10 +857,10 @@ class TradingEnvironment(gym.Env):
             reward = self.net_worth - self.params['initial_balance']
 
         # info = {'balance': self.balance, 'net_worth': self.net_worth}
-        logging.info(f"balance: {self.balance}, net_worth: {self.net_worth}, balance_below_min: {balance_below_min}")
+        # logging.info(f"balance: {self.balance}, net_worth: {self.net_worth}, net_worth_below_min: {net_worth_below_min}")
 
         # Return next observation, reward, done, and info
-        return self.next_observation(), reward, done, balance_below_min, infos
+        return self.next_observation(), reward, done, net_worth_below_min, infos
 
     def render(self):
         # Implement rendering logic based on self.render_mode

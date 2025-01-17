@@ -14,11 +14,11 @@ import ccxt
 import threading
 import queue
 
-from interactions import fetch_symbols, open_trade, close_trade, fetch_open_trades, close_all_open_trades
+from interactions import setup_env, get_nonce, fetch_symbols, open_trade, close_trade, fetch_open_trades, close_all_open_trades
 
 # Load environment variables
-from dotenv import load_dotenv
-load_dotenv()
+# from dotenv import load_dotenv
+# load_dotenv()
 
 # Initialize a buffer to store messages
 message_buffer = {}
@@ -167,7 +167,7 @@ def on_message(ws, message):
                         logging.info('----------------------------------------------------------------------')
                         current_trades = fetch_open_trades(symbol)
                         trade_type = info.get('type')
-
+                        nonce = get_nonce()
                         # Fetch the latest price for the symbol using CCXT
                         exchange = ccxt.binance()
                         ticker = exchange.fetch_ticker(symbol + '/USDT')
@@ -177,15 +177,18 @@ def on_message(ws, message):
                             if current_trades:  # Close the latest trade if it exists
                                 latest_trade = current_trades[0]
                                 symbol, trade_index, is_long = latest_trade
-                                close_trade(trade_index, latest_price, is_long)
+                                close_trade(nonce, trade_index, latest_price, is_long)
+                                nonce += 1
                             
-                            open_trade(latest_price, fetch_symbols(), symbol, trade_type, round(info.get('collateral')), round(info.get('leverage')), info.get('tp_price'), info.get('sl_price'))
+                            open_trade(nonce, latest_price, fetch_symbols(), symbol, trade_type, round(info.get('collateral')), round(info.get('leverage')), info.get('tp_price'), info.get('sl_price'))
+                            nonce += 1
                             logging.info(f"Opened {trade_type} for {symbol} with latest price {latest_price} and info {info}")
                             
                         elif trade_type == 'close' and current_trades:  # Close trades if they exist
                             latest_trade = current_trades[0]
                             symbol, trade_index, is_long = latest_trade
-                            close_trade(trade_index, latest_price, is_long)
+                            close_trade(nonce, trade_index, latest_price, is_long)
+                            nonce += 1
                             logging.info(f"Closed {trade_type} for {symbol} with info {info}")
                         else:
                             logging.info(f"No action required for {symbol} with type {trade_type}")
@@ -200,7 +203,7 @@ def on_error(ws, error):
     logging.error(f"Error: {error}")
 
 def on_close(ws, close_status_code, close_msg):
-    close_all_open_trades()
+    # close_all_open_trades()
     logging.info(f"WebSocket closed: {close_status_code} - {close_msg}")
 
 def on_open(ws):
@@ -213,19 +216,19 @@ def on_open(ws):
     from parameters import selected_params, training_params, log_parameters
     from environment import TradingEnvironment
     
-    close_all_open_trades()
+    # close_all_open_trades()
     
     financial_params = selected_params
-    financial_params['interval'] = '1m'  # for debugging
-    # financial_params['cooldown_period'] = 2
+    financial_params['interval'] = '12h'  # for debugging
+    # financial_params['cooldown_period'] = 5
     # financial_params['kelly_fraction'] = 0.5
-    # financial_params['risk_per_trade'] = 0.018
-    financial_params['initial_balance'] = 25
-    financial_params['boost_factor'] = 5
+    # financial_params['risk_per_trade'] = 0.05
+    financial_params['initial_balance'] = 485
+    # financial_params['boost_factor'] = 5
     financial_params['basic_risk_mgmt'] = True
     
     # financial_params['symbols'] = select_cryptos(25)
-    financial_params['symbols'] = sorted(['BTC', 'ETH', 'SOL', 'NEAR', 'TIA', 'MANTA', 'SEI', 'IOTX', 'GMX', 'TAO']) # 'WIF']) #, 'TAO', 'ZEUS']
+    financial_params['symbols'] = sorted(['BTC', 'ETH', 'SOL', 'NEAR', 'TIA', 'MANTA', 'SEI', 'IOTX', 'GMX', 'TAO']) #, 'WIF']) #, 'TAO', 'ZEUS']
     
     log_parameters(financial_params)
     logging.debug(f"Financial parameters set: {financial_params}")
@@ -275,7 +278,7 @@ def on_open(ws):
 
 # Main function to start the WebSocket connection
 def start_trading_bot():
-    websocket_url = os.getenv("WEBSOCKET_URL")
+    websocket_url = "wss://stream.binance.com:9443/ws"
     logging.info(f"Connecting to WebSocket at {websocket_url}")
     ws = WebSocketApp(websocket_url, 
                       on_message=on_message, 
@@ -329,8 +332,12 @@ if __name__ == "__main__":
     global model_path
     parser = argparse.ArgumentParser(description='Live trading for a trained PPO model on crypto.')
     parser.add_argument('-m', '--model_path', type=str, help='Path to the trained model file')
+    parser.add_argument('-e', '--env', default=None, type=str, help='Environment to use (sepolia or arbitrum).')
+    
     args = parser.parse_args()
     model_path = args.model_path
+    
+    setup_env(args.env)
     
     send_error_email("Live Trading Started", "Live trading for a trained PPO model on crypto.")
 

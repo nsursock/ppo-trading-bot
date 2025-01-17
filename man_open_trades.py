@@ -338,7 +338,7 @@ def main():
     sl_percentage = args.stop_loss_percentage
     direction = args.direction
 
-    open_trades_for_symbols_with_risk_and_direction(symbols, collateral_shares, total_collateral, risk_levels, tp_percentage, sl_percentage, direction)
+    # open_trades_for_symbols_with_risk_and_direction(symbols, collateral_shares, total_collateral, risk_levels, tp_percentage, sl_percentage, direction)
 
 if __name__ == "__main__":
     main()
