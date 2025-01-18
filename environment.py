@@ -314,7 +314,7 @@ class TradingEnvironment(gym.Env):
         kelly_fraction = self.calculate_kelly_fraction(win_probability, win_loss_ratio, self.params['kelly_fraction'])
 
         # Adjust risk per trade using the Kelly fraction
-        risk_per_trade = kelly_fraction if kelly_fraction != 0 else self.params['risk_per_trade']
+        risk_per_trade = max(self.params['risk_per_trade_min'], min(kelly_fraction, self.params['risk_per_trade_max']))
         
         # Progressive collateral calculation: start with a lower percentage of the balance
         initial_collateral_factor = risk_per_trade #0.1  # Start with 10% of the balance

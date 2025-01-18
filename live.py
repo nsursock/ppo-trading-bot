@@ -222,8 +222,7 @@ def on_open(ws):
     financial_params['interval'] = '12h'  # for debugging
     # financial_params['cooldown_period'] = 5
     # financial_params['kelly_fraction'] = 0.5
-    # financial_params['risk_per_trade'] = 0.05
-    financial_params['initial_balance'] = 485
+    financial_params['initial_balance'] = 450
     # financial_params['boost_factor'] = 5
     financial_params['basic_risk_mgmt'] = True
     
