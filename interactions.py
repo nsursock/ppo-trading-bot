@@ -418,20 +418,14 @@ def open_trade(nonce, latest_close_price, pairs, symbol, action, collateral=200,
         gas_estimate = contract.functions.openTrade(_trade, _max_slippage_p, _referrer).estimate_gas({'from': wallet_address})
         logging.debug(f'Gas estimate: {gas_estimate}')  # Debug print for gas estimate
         
-        # gas_estimate = 3_000_000 #2500000
-
-        # Fetch the current base fee and set maxFeePerGas and maxPriorityFeePerGas
-        base_fee = web3.eth.get_block('pending')['baseFeePerGas']
-        max_priority_fee = web3.to_wei(2, 'gwei')  # Set a reasonable priority fee
-        max_fee = base_fee + max_priority_fee
+        # Fetch the current gas price
+        gas_price = web3.eth.gas_price
 
         # Ensure the correct chain ID is used
         chain_id = int(os.getenv('CHAIN_ID'))  # Ensure the chain ID is fetched and converted to an integer
 
         tx_data = contract.functions.openTrade(_trade, _max_slippage_p, _referrer).build_transaction({
             'gas': int(gas_estimate * 1.2),
-            # 'maxFeePerGas': max_fee,
-            # 'maxPriorityFeePerGas': max_priority_fee,
             'gasPrice': gas_price,
             'nonce': nonce,
             'chainId': chain_id  # Set the correct chain ID
@@ -442,16 +436,15 @@ def open_trade(nonce, latest_close_price, pairs, symbol, action, collateral=200,
         balance = web3.eth.get_balance(wallet_address)
         logging.info(f"Wallet balance: {balance}")
 
-        if balance < (max_fee * int(gas_estimate * 1.2)):
-            logging.error("Insufficient funds for gas * price + value")
-            return
+        # if balance < (gas_price * int(gas_estimate * 1.2)):
+        #     logging.error("Insufficient funds for gas * price + value")
+        #     return
 
         tx = {
             'to': contract_address,
             'data': tx_data['data'],
             'gas': int(gas_estimate * 1.2),
-            'maxFeePerGas': max_fee,
-            'maxPriorityFeePerGas': max_priority_fee,
+            'gasPrice': gas_price,
             'nonce': nonce,
             'chainId': chain_id  # Set the correct chain ID
         }
