@@ -219,7 +219,6 @@ def on_open(ws):
     # close_all_open_trades()
     
     financial_params = selected_params
-    financial_params['interval'] = '12h'  # for debugging
     # financial_params['cooldown_period'] = 5
     # financial_params['kelly_fraction'] = 0.5
     financial_params['initial_balance'] = 450
@@ -227,7 +226,13 @@ def on_open(ws):
     financial_params['basic_risk_mgmt'] = True
     
     # financial_params['symbols'] = select_cryptos(25)
-    financial_params['symbols'] = sorted(['BTC', 'ETH', 'SOL', 'NEAR', 'TIA', 'MANTA', 'SEI', 'IOTX', 'GMX', 'TAO']) #, 'WIF']) #, 'TAO', 'ZEUS']
+    if env == 'prod':
+        financial_params['interval'] = '4h'  # for debugging
+        financial_params['symbols'] = sorted(['BTC', 'ETH', 'SOL', 'NEAR', 'TIA', 'MANTA', 'SEI', 'IOTX', 'GMX', 'TAO'])
+    else:
+        financial_params['interval'] = '1m'  # for debugging
+        financial_params['symbols'] = sorted(['BTC', 'ETH', 'SOL', 'NEAR', 'TIA', 'MANTA', 'SEI', 'IOTX', 'GMX', 'WIF'])
+    
     
     log_parameters(financial_params)
     logging.debug(f"Financial parameters set: {financial_params}")
@@ -328,7 +333,7 @@ def setup_logging():
 
 if __name__ == "__main__":
     from utilities import send_error_email
-    global model_path
+    global model_path, env
     parser = argparse.ArgumentParser(description='Live trading for a trained PPO model on crypto.')
     parser.add_argument('-m', '--model_path', type=str, help='Path to the trained model file')
     parser.add_argument('-e', '--env', default=None, type=str, help='Environment to use (sepolia or arbitrum).')
@@ -336,7 +341,18 @@ if __name__ == "__main__":
     args = parser.parse_args()
     model_path = args.model_path
     
-    setup_env(args.env)
+     # Load the appropriate environment file
+    if args.env:
+        if args.env == 'rail':
+            env = 'prod'
+            env_file = None
+        else:
+            env = args.env
+            env_file = f".env.{args.env}"
+    else:
+        env = 'test'
+        env_file = None
+    setup_env(env_file)
     
     send_error_email("Live Trading Started", "Live trading for a trained PPO model on crypto.")
 
