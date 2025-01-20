@@ -227,7 +227,7 @@ def on_open(ws):
     
     # financial_params['symbols'] = select_cryptos(25)
     if env == 'prod':
-        financial_params['interval'] = '4h'  # for debugging
+        financial_params['interval'] = '15m'  # for debugging
         financial_params['symbols'] = sorted(['BTC', 'ETH', 'SOL', 'NEAR', 'TIA', 'MANTA', 'SEI', 'IOTX', 'GMX', 'TAO'])
     else:
         financial_params['interval'] = '1m'  # for debugging

@@ -418,8 +418,9 @@ def open_trade(nonce, latest_close_price, pairs, symbol, action, collateral=200,
         gas_estimate = contract.functions.openTrade(_trade, _max_slippage_p, _referrer).estimate_gas({'from': wallet_address})
         logging.debug(f'Gas estimate: {gas_estimate}')  # Debug print for gas estimate
         
-        # Fetch the current gas price
-        gas_price = web3.eth.gas_price
+        # Fetch the current base fee and set gas price accordingly
+        base_fee = web3.eth.get_block('pending')['baseFeePerGas']
+        gas_price = int(base_fee * 1.2)  # Set gas price to be 20% higher than the base fee
 
         # Ensure the correct chain ID is used
         chain_id = int(os.getenv('CHAIN_ID'))  # Ensure the chain ID is fetched and converted to an integer
