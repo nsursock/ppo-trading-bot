@@ -14,7 +14,7 @@ def random_date(start, end):
     return start + timedelta(days=random.randint(0, (end - start).days))
 
 financial_params = {
-    'initial_balance': 500,
+    'initial_balance': 100,
     'leverage_min': 1,
     'leverage_max': 150,
     'collateral_min': 5,
@@ -27,7 +27,7 @@ financial_params = {
     'risk_per_trade_max': 0.1,
     'tp_mult_perc': 0.35,
     'sl_mult_perc': 0.2,
-    'cooldown_period': 3,
+    'cooldown_period': 1,
     'trading_penalty': 0.5,
     'kelly_fraction': 0.5,
 }
