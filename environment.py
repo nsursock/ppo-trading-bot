@@ -765,7 +765,10 @@ class TradingEnvironment(gym.Env):
         high_prices = self.data_matrix[self.current_step, :, self.mapping['high']]
         current_prices = self.data_matrix[self.current_step, :, self.mapping['close']]
         
-        infos = {}
+        infos = {
+            'orders': {},  # Initialize orders section
+            'stats': {}    # Initialize stats section
+        }
         
         # Handle SL and TP for each position before processing actions
         if self.params['basic_risk_mgmt']:
@@ -804,22 +807,22 @@ class TradingEnvironment(gym.Env):
                 if self.positions[i]:
                     self.close_position(i, current_prices[i], 'long')
                 collateral, leverage, tp_price, sl_price = self.open_position(i, 'long', current_prices[i])
-                infos[self.params['symbols'][i]] = { 'type': 'open_long', 'collateral': collateral, 'leverage': leverage, 'tp_price': tp_price, 'sl_price': sl_price }
+                infos['orders'][self.params['symbols'][i]] = { 'type': 'open_long', 'collateral': collateral, 'leverage': leverage, 'tp_price': tp_price, 'sl_price': sl_price }
             elif self.balance >= self.params['collateral_min'] and action[i] == self.actions_available['short']:  # Short
                 if self.positions[i]:
                     self.close_position(i, current_prices[i], 'short')
                 collateral, leverage, tp_price, sl_price = self.open_position(i, 'short', current_prices[i])
-                infos[self.params['symbols'][i]] = { 'type': 'open_short', 'collateral': collateral, 'leverage': leverage, 'tp_price': tp_price, 'sl_price': sl_price }
+                infos['orders'][self.params['symbols'][i]] = { 'type': 'open_short', 'collateral': collateral, 'leverage': leverage, 'tp_price': tp_price, 'sl_price': sl_price }
             elif action[i] == self.actions_available['close']:  # Close
                 if self.positions[i]:
                     self.close_position(i, current_prices[i], 'close')
-                    infos[self.params['symbols'][i]] = { 'type': 'close', 'exit_price': current_prices[i] }
+                    infos['orders'][self.params['symbols'][i]] = { 'type': 'close', 'exit_price': current_prices[i] }
             elif self.balance >= self.params['collateral_min'] and action[i] == self.actions_available['hedge']:  # Hedge
                 if self.positions[i]:
                     current_type = 'long' if self.positions[i]['type'] == 'short' else 'short'
                     self.close_position(i, current_prices[i], current_type)
                     collateral, leverage, tp_price, sl_price = self.open_position(i, current_type, current_prices[i])
-                    infos[self.params['symbols'][i]] = { 'type': f'open_{current_type}', 'collateral': collateral, 'leverage': leverage, 'tp_price': tp_price, 'sl_price': sl_price }
+                    infos['orders'][self.params['symbols'][i]] = { 'type': f'open_{current_type}', 'collateral': collateral, 'leverage': leverage, 'tp_price': tp_price, 'sl_price': sl_price }
             # elif action[i] == self.actions_available['trail']:  # Trailing Stop
             #     self.update_trailing_stop(i, current_prices[i])
 
@@ -856,8 +859,10 @@ class TradingEnvironment(gym.Env):
         else:
             reward = self.net_worth - self.params['initial_balance']
 
-        # info = {'balance': self.balance, 'net_worth': self.net_worth}
-        # logging.info(f"balance: {self.balance}, net_worth: {self.net_worth}, net_worth_below_min: {net_worth_below_min}")
+        # Populate stats section
+        infos['stats']['balance'] = self.balance
+        infos['stats']['net_worth'] = self.net_worth
+        infos['stats']['positions'] = self.positions
 
         # Return next observation, reward, done, and info
         return self.next_observation(), reward, done, net_worth_below_min, infos

@@ -98,10 +98,10 @@ unittest_params = {
     'symbols': sorted(['ADA', 'BNB', 'EOS', 'ETH', 'IOTA', 'LTC', 'NEO', 'QTUM', 'XLM', 'XRP']),
     # 'symbols': sorted(['BTC', 'ETC', 'ICX', 'LINK', 'NULS', 'ONT', 'TRX', 'LTC', 'NEO', 'VET']),
     # 'symbols': sorted(['LTC', 'DOGE', 'SHIB', 'PEOPLE', 'FLOKI', 'PEPE', 'MEME', 'BONK', 'WIF', 'BOME']),
-    'end_time': '2021-12-31', #'2021-08-31', #random_date(start_date, end_date).strftime('%Y-%m-%d'),
+    'end_time': '2021-06-30', #'2021-08-31', #random_date(start_date, end_date).strftime('%Y-%m-%d'),
     'limit': 350, # 240,
-    'interval': '1d',
-    'boost_factor': 25,
+    'interval': '12h',
+    'boost_factor': 30,
     'model_name': 'model_ppo_crypto_trading_plex', #'model_ppo_crypto_trading_unit_12h',
     'basic_risk_mgmt': False
 }

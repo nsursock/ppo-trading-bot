@@ -723,6 +723,7 @@ def send_error_email(subject, body, stack_trace=None):
         if stack_trace:
             full_body += f"\n\nStack Trace:\n{stack_trace}"
         
+        # Ensure the email is sent as plain text
         msg.attach(MIMEText(full_body, 'plain'))
 
         try:

@@ -13,6 +13,8 @@ import logging
 import ccxt
 import threading
 import queue
+import pprint  # Add this import at the top of your file
+from tabulate import tabulate  # Import tabulate
 
 from interactions import setup_env, get_nonce, fetch_symbols, open_trade, close_trade, fetch_open_trades, close_all_open_trades
 
@@ -160,10 +162,16 @@ def on_message(ws, message):
                     _, _, _, _, infos = live_env.envs[0].get_wrapper_attr('step')(action)
                     logging.info(f"Stepped environment with action {action}")  # Debug level log for environment stepping
                     
-                    logging.info(f"Infos: {infos}")
+                    # Prepare pretty-printed orders for logging
+                    orders_table = tabulate(
+                        [{"key": key, **value} for key, value in infos['orders'].items()],
+                        headers="keys",
+                        tablefmt="pretty"
+                    )
+                    logging.info(f"Number of orders: {len(infos['orders'])} \n Orders:\n{orders_table}")
                     
                     # After the environment step
-                    for symbol, info in infos.items():
+                    for symbol, info in infos['orders'].items():
                         logging.info('----------------------------------------------------------------------')
                         current_trades = fetch_open_trades(symbol)
                         trade_type = info.get('type')
@@ -194,8 +202,18 @@ def on_message(ws, message):
                             logging.info(f"No action required for {symbol} with type {trade_type}")
 
                         # logging.info(f"Executed trade for {symbol} with type {trade_type} and info {info}")
+
+                    # Prepare pretty-printed positions for email
+                    positions_table = tabulate(
+                        [{"key": live_env.envs[0].get_wrapper_attr('params')['symbols'][idx], **{k: v for k, v in position.items() if k in ["open_time", "type", "entry_price", "leverage", "collateral"]}} for idx, position in enumerate(infos['stats']['positions'])],
+                        headers="keys",
+                        tablefmt="pretty"
+                    )
+                    logging.info(f"Net worth: {infos['stats']['net_worth']}, Balance: {infos['stats']['balance']}, Positions:\n{positions_table}")
+
+                    # Send email with pretty-printed positions
+                    send_error_email("Stats", f"Net worth: {infos['stats']['net_worth']}, Balance: {infos['stats']['balance']}, Positions:\n{positions_table}")
                     
-          
     except Exception as e:  
         logging.error(f"Error processing message: {e}")
 
@@ -227,8 +245,8 @@ def on_open(ws):
     
     # financial_params['symbols'] = select_cryptos(25)
     if env == 'prod':
-        financial_params['interval'] = '1d'  # for debugging
-        financial_params['limit'] = 200
+        financial_params['interval'] = '12h'  # for debugging
+        financial_params['limit'] = 400
         financial_params['symbols'] = sorted(['BTC', 'ETH', 'SOL', 'NEAR', 'TIA', 'MANTA', 'SEI', 'IOTX', 'GMX', 'TAO'])
     else:
         financial_params['interval'] = '1m'  # for debugging
