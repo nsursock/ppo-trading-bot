@@ -14,7 +14,7 @@ def random_date(start, end):
     return start + timedelta(days=random.randint(0, (end - start).days))
 
 financial_params = {
-    'initial_balance': 500,
+    'initial_balance': 150,
     'leverage_min': 1,
     'leverage_max': 150,
     'collateral_min': 5,
@@ -95,12 +95,12 @@ basic_params = {
 unittest_params = {
     'market_data': 'original', # 'original' or 'random' or 'synthetic'
     'synth_mode': 'testing', # 'training' or 'testing'
-    # 'symbols': sorted(['ADA', 'BNB', 'EOS', 'ETH', 'IOTA', 'LTC', 'NEO', 'QTUM', 'XLM', 'XRP']),
-    'symbols': sorted(['BTC', 'ETC', 'ICX', 'LINK', 'NULS', 'ONT', 'TRX', 'LTC', 'NEO', 'VET']),
+    'symbols': sorted(['ADA', 'BNB', 'EOS', 'ETH', 'IOTA', 'LTC', 'NEO', 'QTUM', 'XLM', 'XRP']),
+    # 'symbols': sorted(['BTC', 'ETC', 'ICX', 'LINK', 'NULS', 'ONT', 'TRX', 'LTC', 'NEO', 'VET']),
     # 'symbols': sorted(['LTC', 'DOGE', 'SHIB', 'PEOPLE', 'FLOKI', 'PEPE', 'MEME', 'BONK', 'WIF', 'BOME']),
     'end_time': '2021-06-30', #'2021-08-31', #random_date(start_date, end_date).strftime('%Y-%m-%d'),
-    'limit': 350, # 240,
-    'interval': '12h',
+    'limit': 175, # 240,
+    'interval': '1d',
     'boost_factor': 30,
     'model_name': 'model_ppo_crypto_trading_plex', #'model_ppo_crypto_trading_unit_12h',
     'basic_risk_mgmt': False
