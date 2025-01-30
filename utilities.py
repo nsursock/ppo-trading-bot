@@ -518,6 +518,7 @@ def handle_risk_management_1s_loop(symbol_index, position_type, low_prices, high
 
     for i in range(num_candles):
         
+        # Check risk management
         if max_price is not None:
             if position_type == 1 and high_prices[i] >= max_price:
                 logging.debug(f"Max hit at index {i} for symbol {symbol_index} with price {max_price} at {timestamps[i]}")
@@ -552,58 +553,58 @@ def handle_risk_management_1s_loop(symbol_index, position_type, low_prices, high
 
     return None, None, None, None
 
-def handle_risk_management_1s_numpy(symbol_index, position_type, low_prices, high_prices, sl_prices, tp_prices, liq_prices, max_prices, timestamps):
-    # Vectorized risk management
-    sl_price = sl_prices[symbol_index]
-    tp_price = tp_prices[symbol_index]
-    liq_price = liq_prices[symbol_index]
-    max_price = max_prices[symbol_index]
+# def handle_risk_management_1s_numpy(symbol_index, position_type, low_prices, high_prices, sl_prices, tp_prices, liq_prices, max_prices, timestamps):
+#     # Vectorized risk management
+#     sl_price = sl_prices[symbol_index]
+#     tp_price = tp_prices[symbol_index]
+#     liq_price = liq_prices[symbol_index]
+#     max_price = max_prices[symbol_index]
     
-    if max_price is not None:
-        if position_type == 1:
-            max_hit_indices = np.where(high_prices >= max_price)[0]
-        else:
-            max_hit_indices = np.where(low_prices <= max_price)[0]
+#     if max_price is not None:
+#         if position_type == 1:
+#             max_hit_indices = np.where(high_prices >= max_price)[0]
+#         else:
+#             max_hit_indices = np.where(low_prices <= max_price)[0]
         
-        if max_hit_indices.size > 0:
-            max_index = max_hit_indices[0]
-            logging.debug(f"Max hit at index {max_index} for symbol {symbol_index} with price {max_price} at {timestamps[max_index]}")
-            return symbol_index, max_price, "max", timestamps[max_index]
+#         if max_hit_indices.size > 0:
+#             max_index = max_hit_indices[0]
+#             logging.debug(f"Max hit at index {max_index} for symbol {symbol_index} with price {max_price} at {timestamps[max_index]}")
+#             return symbol_index, max_price, "max", timestamps[max_index]
    
-    if liq_price is not None:
-        if position_type == 1:
-            liq_hit_indices = np.where(low_prices <= liq_price)[0]
-        else:
-            liq_hit_indices = np.where(high_prices >= liq_price)[0]
+#     if liq_price is not None:
+#         if position_type == 1:
+#             liq_hit_indices = np.where(low_prices <= liq_price)[0]
+#         else:
+#             liq_hit_indices = np.where(high_prices >= liq_price)[0]
         
-        if liq_hit_indices.size > 0:
-            liq_index = liq_hit_indices[0]
-            logging.debug(f"Liquidation hit at index {liq_index} for symbol {symbol_index} with price {liq_price} at {timestamps[liq_index]}")
-            return symbol_index, liq_price, "liq", timestamps[liq_index]
+#         if liq_hit_indices.size > 0:
+#             liq_index = liq_hit_indices[0]
+#             logging.debug(f"Liquidation hit at index {liq_index} for symbol {symbol_index} with price {liq_price} at {timestamps[liq_index]}")
+#             return symbol_index, liq_price, "liq", timestamps[liq_index]
 
-    if tp_price is not None:
-        if position_type == 1:
-            tp_hit_indices = np.where(high_prices >= tp_price)[0]
-        else:
-            tp_hit_indices = np.where(low_prices <= tp_price)[0]
+#     if tp_price is not None:
+#         if position_type == 1:
+#             tp_hit_indices = np.where(high_prices >= tp_price)[0]
+#         else:
+#             tp_hit_indices = np.where(low_prices <= tp_price)[0]
         
-        if tp_hit_indices.size > 0:
-            tp_index = tp_hit_indices[0]
-            logging.debug(f"TP hit at index {tp_index} for symbol {symbol_index} with price {tp_price} at {timestamps[tp_index]}")
-            return symbol_index, tp_price, "tp", timestamps[tp_index]
+#         if tp_hit_indices.size > 0:
+#             tp_index = tp_hit_indices[0]
+#             logging.debug(f"TP hit at index {tp_index} for symbol {symbol_index} with price {tp_price} at {timestamps[tp_index]}")
+#             return symbol_index, tp_price, "tp", timestamps[tp_index]
         
-    if sl_price is not None:
-        if position_type == 1:
-            sl_hit_indices = np.where(low_prices <= sl_price)[0]
-        else:
-            sl_hit_indices = np.where(high_prices >= sl_price)[0]
+#     if sl_price is not None:
+#         if position_type == 1:
+#             sl_hit_indices = np.where(low_prices <= sl_price)[0]
+#         else:
+#             sl_hit_indices = np.where(high_prices >= sl_price)[0]
         
-        if sl_hit_indices.size > 0:
-            sl_index = sl_hit_indices[0]
-            logging.debug(f"SL hit at index {sl_index} for symbol {symbol_index} with price {sl_price} at {timestamps[sl_index]}")
-            return symbol_index, sl_price, "sl", timestamps[sl_index]
+#         if sl_hit_indices.size > 0:
+#             sl_index = sl_hit_indices[0]
+#             logging.debug(f"SL hit at index {sl_index} for symbol {symbol_index} with price {sl_price} at {timestamps[sl_index]}")
+#             return symbol_index, sl_price, "sl", timestamps[sl_index]
 
-    return None, None, None, None
+#     return None, None, None, None
 
 # from risk_management import handle_risk_management_cython
 

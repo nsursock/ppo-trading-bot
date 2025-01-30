@@ -420,7 +420,7 @@ def decode_revert_reason(error):
     except Exception as e:
         logging.error(f'Failed to decode revert reason: {e}')
 
-def open_trade(nonce, latest_close_price, pairs, symbol, action, collateral=200, leverage=10, tp_price=0, sl_price=0):
+def open_trade(nonce, latest_close_price, pairs, symbol, action, collateral=200, leverage=10, tp_price=0, sl_price=0, limit_price=0):
     # leverageExperiment = 5
     try: 
         tx_data = None
@@ -464,7 +464,7 @@ def open_trade(nonce, latest_close_price, pairs, symbol, action, collateral=200,
         #     if sl_price <= latest_close_price:
         #         logging.warning("SL price must be greater than the latest close price for a short position.")
         #         sl_price = latest_close_price * (1 + sl_percentage)
-
+        
         _trade = {
             'user': wallet_address,
             'index': 0,  # uint32
@@ -480,6 +480,10 @@ def open_trade(nonce, latest_close_price, pairs, symbol, action, collateral=200,
             'sl': int(sl_price * 1e10),  # uint64
             '__placeholder': 0  # uint192, BigNumber to string
         }
+        
+        if limit_price != 0:
+            _trade['openPrice'] = int(limit_price * 1e10)
+            _trade['tradeType'] = 1
 
         # Convert all values to native Python types
         _tradeForJsonDump = {k: int(v) if isinstance(v, (int, float)) else v for k, v in _trade.items()}
