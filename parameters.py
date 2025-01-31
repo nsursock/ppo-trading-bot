@@ -95,11 +95,11 @@ basic_params = {
 unittest_params = {
     'market_data': 'original', # 'original' or 'random' or 'synthetic'
     'synth_mode': 'testing', # 'training' or 'testing'
-    'symbols': sorted(['ADA', 'BNB', 'EOS', 'ETH', 'IOTA', 'LTC', 'NEO', 'QTUM', 'XLM', 'XRP']),
-    # 'symbols': sorted(['BTC', 'ETC', 'ICX', 'LINK', 'NULS', 'ONT', 'TRX', 'LTC', 'NEO', 'VET']),
+    # 'symbols': sorted(['ADA', 'BNB', 'EOS', 'ETH', 'IOTA', 'LTC', 'NEO', 'QTUM', 'XLM', 'XRP']),
+    'symbols': sorted(['BTC', 'ETC', 'ICX', 'LINK', 'NULS', 'ONT', 'TRX', 'LTC', 'NEO', 'VET']),
     # 'symbols': sorted(['LTC', 'DOGE', 'SHIB', 'PEOPLE', 'FLOKI', 'PEPE', 'MEME', 'BONK', 'WIF', 'BOME']),
-    'end_time': '2021-05-30', #'2021-08-31', #random_date(start_date, end_date).strftime('%Y-%m-%d'),
-    'limit': 60, # 240,
+    'end_time': '2021-06-30', #'2021-08-31', #random_date(start_date, end_date).strftime('%Y-%m-%d'),
+    'limit': 175, # 240,
     'interval': '1d',
     'boost_factor': 30,
     'model_name': 'model_ppo_crypto_trading_plex', #'model_ppo_crypto_trading_unit_12h',
