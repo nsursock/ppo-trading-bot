@@ -102,7 +102,7 @@ unittest_params = {
     'limit': 6 * 175, #round(24 * 45), # 240,
     'interval': '4h',
     'boost_factor': 30,
-    'model_name': 'model_ppo_crypto_trading_div20', #'model_ppo_crypto_trading_unit_12h',
+    'model_name': 'model_ppo_crypto_trading_div50_4h', #'model_ppo_crypto_trading_unit_12h',
     'basic_risk_mgmt': True
 }
 

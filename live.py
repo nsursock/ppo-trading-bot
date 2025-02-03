@@ -254,9 +254,9 @@ def on_open(ws):
         financial_params['limit'] = 288
         financial_params['symbols'] = sorted(['BTC', 'ETH', 'SOL', 'NEAR', 'TIA', 'MANTA', 'SEI', 'IOTX', 'GMX', 'TAO'])
     else:
-        financial_params['symbols'] = select_cryptos(30, network='sepolia')
+        financial_params['symbols'] = select_cryptos(100, network='sepolia')
         financial_params['interval'] = '4h'  # for debugging
-        financial_params['limit'] = 6 * 90
+        financial_params['limit'] = 6 * 120
         # financial_params['symbols'] = sorted(['BTC', 'ETH', 'SOL', 'NEAR', 'TIA', 'MANTA', 'SEI', 'IOTX', 'GMX', 'WIF'])
     
     
@@ -264,7 +264,7 @@ def on_open(ws):
     logging.debug(f"Financial parameters set: {financial_params}")
 
     # # Prepare historical data
-    data_matrix, timestamps, mapping, valid_symbols, current_window = preprocess_data(20, financial_params['symbols'], financial_params['interval'], financial_params['limit'])
+    data_matrix, timestamps, mapping, valid_symbols, current_window = preprocess_data(50, financial_params['symbols'], financial_params['interval'], financial_params['limit'])
     financial_params['symbols'] = valid_symbols
     
     # Initialize the environment with live data

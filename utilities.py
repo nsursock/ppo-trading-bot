@@ -385,6 +385,7 @@ def preprocess_data(target_num_symbols=10, symbols=['BTC', 'ETH'], interval='1d'
     # Calculate the number of candles based on the common period
     num_candles = min(len(dataframes[symbol].loc[common_start_time:common_end_time]) for symbol in valid_symbols)
     logging.info(f"Number of candles: {num_candles}")
+    logging.info(f"Number of symbols: {len(valid_symbols)}")
     
     # Extract timestamps
     timestamps = dataframes[valid_symbols[0]].loc[common_start_time:common_end_time].index[:num_candles].tolist()
@@ -635,7 +636,7 @@ def initialize_environments(financial_params, training_params, plot_dir='.'):
         
     if financial_params['market_data'] == 'random':
         # Preprocess data using the utility function
-        symbols = ['GAINS_100']
+        symbols = ['GAINS_200']
         if symbols[0].startswith('GAINS_'):
             count = int(symbols[0].split('_')[1])
             symbols = select_cryptos(count)
@@ -656,7 +657,7 @@ def initialize_environments(financial_params, training_params, plot_dir='.'):
         interval = selected_params['interval']
         limit = selected_params['limit']
         end_time = selected_params['end_time']
-        data_matrix, timestamps, mapping, valid_symbols, _ = preprocess_data(20, symbols, interval, limit, end_time=end_time)
+        data_matrix, timestamps, mapping, valid_symbols, _ = preprocess_data(50, symbols, interval, limit, end_time=end_time)
         end_time = timestamps[-1]
         selected_params['end_time'] = end_time
         selected_params['symbols'] = valid_symbols
