@@ -56,18 +56,27 @@ if __name__ == "__main__":
     plt.tight_layout()
     plt.show()
     
-    # Create a second figure for the evolution of balance for each episode
-    fig2, ax2 = plt.subplots(figsize=(12, 6))
-    ax2.set_title('Evolution of Balance for Each Episode (Log Scale)')
-    ax2.set_xlabel('Date')
-    ax2.set_ylabel('Log of Balance')
-
-    # Plot balance evolution for each episode
+    # Create a second figure with two subplots for the evolution of balance for each episode
+    fig2, (ax2_normal, ax2_log) = plt.subplots(nrows=1, ncols=2, figsize=(20, 6))
+    
+    # Normal scale plot
+    ax2_normal.set_title('Evolution of Balance for Each Episode (Normal Scale)')
+    ax2_normal.set_xlabel('Date')
+    ax2_normal.set_ylabel('Balance')
     for episode, group in df.groupby('episode'):
-        ax2.plot(group['date'], np.log1p(group['capital']), label=f'Episode {episode}')  # Use log1p to handle zero values safely
-
-    ax2.legend(title='Episodes')
-    plt.xticks(rotation=45)
+        ax2_normal.plot(group['date'], group['capital'], label=f'Episode {episode}')
+    ax2_normal.legend(title='Episodes')
+    ax2_normal.tick_params(axis='x', rotation=45)
+    
+    # Log scale plot
+    ax2_log.set_title('Evolution of Balance for Each Episode (Log Scale)')
+    ax2_log.set_xlabel('Date')
+    ax2_log.set_ylabel('Log of Balance')
+    for episode, group in df.groupby('episode'):
+        ax2_log.plot(group['date'], np.log1p(group['capital']), label=f'Episode {episode}')
+    ax2_log.legend(title='Episodes')
+    ax2_log.tick_params(axis='x', rotation=45)
+    
     plt.tight_layout()
     plt.show()
     

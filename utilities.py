@@ -8,6 +8,11 @@ from time import sleep
 
 import ta
 
+import warnings
+
+# Suppress specific FutureWarning
+warnings.filterwarnings("ignore", category=FutureWarning, module="ta.trend")
+
 # Set up basic configuration for logging
 logging.basicConfig(level=logging.INFO)
 
@@ -290,7 +295,7 @@ def fetch_binance_klines(symbol, interval, limit=100, end_time=None, retries=1, 
     klines[['open', 'high', 'low', 'close', 'volume']] = klines[['open', 'high', 'low', 'close', 'volume']].apply(pd.to_numeric)
     klines = klines[['timestamp', 'open', 'high', 'low', 'close', 'volume']]
     
-    # klines = add_technical_indicators(klines)
+    klines = add_technical_indicators(klines)
     
     klines.set_index('timestamp', inplace=True)
     
@@ -447,14 +452,15 @@ def get_liquidation_threshold(leverage):
 
 
 import random
-def fetch_symbols():
-    response = requests.get('https://backend-arbitrum.gains.trade/trading-variables')
+def fetch_symbols(network='arbitrum'):
+    response = requests.get(f'https://backend-{network}.gains.trade/trading-variables')
     pairs = response.json()['pairs']
     return [{'symbol': pair['from'], 'index': idx, 'groupIndex': pair['groupIndex']} for idx, pair in enumerate(pairs)]
 
-def select_cryptos(count):
-    symbols = fetch_symbols()
+def select_cryptos(count, network='arbitrum'):
+    symbols = fetch_symbols(network)
     filtered_symbols = [symbol['symbol'] for symbol in symbols if 'groupIndex' in symbol and int(symbol['groupIndex']) in [0, 10]]
+    filtered_symbols = [symbol for symbol in filtered_symbols if symbol]
     random.shuffle(filtered_symbols)
     selected_cryptos = filtered_symbols[:count]
     return selected_cryptos
@@ -629,7 +635,7 @@ def initialize_environments(financial_params, training_params, plot_dir='.'):
         
     if financial_params['market_data'] == 'random':
         # Preprocess data using the utility function
-        symbols = ['GAINS_40']
+        symbols = ['GAINS_100']
         if symbols[0].startswith('GAINS_'):
             count = int(symbols[0].split('_')[1])
             symbols = select_cryptos(count)
@@ -650,7 +656,7 @@ def initialize_environments(financial_params, training_params, plot_dir='.'):
         interval = selected_params['interval']
         limit = selected_params['limit']
         end_time = selected_params['end_time']
-        data_matrix, timestamps, mapping, valid_symbols, _ = preprocess_data(10, symbols, interval, limit, end_time=end_time)
+        data_matrix, timestamps, mapping, valid_symbols, _ = preprocess_data(20, symbols, interval, limit, end_time=end_time)
         end_time = timestamps[-1]
         selected_params['end_time'] = end_time
         selected_params['symbols'] = valid_symbols

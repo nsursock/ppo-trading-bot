@@ -105,6 +105,7 @@ def on_message(ws, message):
                 logging.debug(f"Appended kline data to message_buffer for timestamp: {timestamp}")  # Debug level log for data appending
                 
                 if len(message_buffer[timestamp]) == len(financial_params['symbols']):
+                    from utilities import transform_to_matrix, add_technical_indicators
                     logging.info(f"Received all messages for timestamp: {timestamp}")  # Info level log for all messages received
                     
                     message_buffer[timestamp] = sorted(message_buffer[timestamp], key=lambda x: x.iloc[0]['symbol'])
@@ -137,12 +138,16 @@ def on_message(ws, message):
                         current_window[symbol] = current_window[symbol].sort_values(by='timestamp').drop_duplicates(subset=['timestamp'], keep='last')
                         current_window[symbol].set_index('timestamp', inplace=True)
                         
+                        current_window[symbol] = add_technical_indicators(current_window[symbol])
+                        
                         logging.info(f"Updated current window for symbol {symbol}: {len(current_window[symbol])} candles")  # Debug level log for window update
                         logging.debug(f"{current_window[symbol].head()}")  # Debug level log for window update
                     
+                    # Print the columns of the DataFrame
+                    # print(current_window[symbol].columns)
+                
                     timestamps = current_window[symbol].index.tolist()
-                    
-                    from utilities import transform_to_matrix
+
                     data = transform_to_matrix(current_window)
                     logging.debug(f"Preprocessed data for current_window")  # Debug level log for data preprocessing
                     
@@ -239,26 +244,27 @@ def on_open(ws):
     financial_params = selected_params
     # financial_params['cooldown_period'] = 1
     # financial_params['kelly_fraction'] = 0.5
-    financial_params['initial_balance'] = 150
+    financial_params['initial_balance'] = 200
     # financial_params['boost_factor'] = 5
     financial_params['basic_risk_mgmt'] = True
     
-    # financial_params['symbols'] = select_cryptos(25)
+    # 
     if env == 'prod':
-        financial_params['interval'] = '1d'  # for debugging
-        financial_params['limit'] = 200
+        financial_params['interval'] = '4h'  # for debugging
+        financial_params['limit'] = 288
         financial_params['symbols'] = sorted(['BTC', 'ETH', 'SOL', 'NEAR', 'TIA', 'MANTA', 'SEI', 'IOTX', 'GMX', 'TAO'])
     else:
-        financial_params['interval'] = '1m'  # for debugging
-        financial_params['limit'] = 600
-        financial_params['symbols'] = sorted(['BTC', 'ETH', 'SOL', 'NEAR', 'TIA', 'MANTA', 'SEI', 'IOTX', 'GMX', 'WIF'])
+        financial_params['symbols'] = select_cryptos(30, network='sepolia')
+        financial_params['interval'] = '4h'  # for debugging
+        financial_params['limit'] = 6 * 90
+        # financial_params['symbols'] = sorted(['BTC', 'ETH', 'SOL', 'NEAR', 'TIA', 'MANTA', 'SEI', 'IOTX', 'GMX', 'WIF'])
     
     
     log_parameters(financial_params)
     logging.debug(f"Financial parameters set: {financial_params}")
 
     # # Prepare historical data
-    data_matrix, timestamps, mapping, valid_symbols, current_window = preprocess_data(10, financial_params['symbols'], financial_params['interval'], financial_params['limit'])
+    data_matrix, timestamps, mapping, valid_symbols, current_window = preprocess_data(20, financial_params['symbols'], financial_params['interval'], financial_params['limit'])
     financial_params['symbols'] = valid_symbols
     
     # Initialize the environment with live data
@@ -374,7 +380,7 @@ if __name__ == "__main__":
         env_file = None
     setup_env(env_file)
     
-    send_error_email("Live Trading Started", "Live trading for a trained PPO model on crypto.")
+    send_error_email("Live Trading Started", f"Live trading for a trained PPO model on crypto (env: {env}).")
 
     # Configure logging to write to a file
     # logging.basicConfig(filename='live_trading.log', level=logging.INFO, filemode='w', format='%(asctime)s - %(levelname)s - %(message)s')

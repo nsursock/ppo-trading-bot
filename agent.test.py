@@ -79,8 +79,8 @@ class TestTradingAgent(unittest.TestCase):
                 plot_returns_heatmap(history, save_path=os.path.join(plot_dir, "returns_heatmap.png"))
                 plot_combined_correlation_heatmap(history, save_path=os.path.join(plot_dir, "metrics_correlation_heatmap.png"))
                 # plot_additional_metrics_correlation_heatmap(history, save_path=os.path.join(plot_dir, "additional_metrics_correlation_heatmap.png"))
-                for symbol_index, symbol in enumerate(self.test_env.params['symbols']):
-                    plot_symbol(symbol, self.test_env.mapping, self.test_env.timestamps, self.test_env.data_matrix[:, symbol_index, :], self.test_env.history, title=symbol, save_path=plot_dir)
+                # for symbol_index, symbol in enumerate(self.test_env.params['symbols']):
+                #     plot_symbol(symbol, self.test_env.mapping, self.test_env.timestamps, self.test_env.data_matrix[:, symbol_index, :], self.test_env.history, title=symbol, save_path=plot_dir)
 
                 # Log outputs to the directory
                 log_trade_history(history, save_path=os.path.join(plot_dir, "trade_history.csv"))
