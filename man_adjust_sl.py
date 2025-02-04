@@ -6,6 +6,7 @@ from web3 import Web3
 import requests
 import logging
 import argparse
+import time
 
 # from interactions import fetch_open_trades
 
@@ -24,7 +25,7 @@ def fetch_symbols():
     pairs = response.json()['pairs']
     return [{'symbol': pair['from'], 'index': idx, 'groupIndex': pair['groupIndex']} for idx, pair in enumerate(pairs)]
 
-def fetch_open_trades(symbol=None):
+def fetch_open_trades2(symbol=None):
     try:
         logging.info('Fetching open trades...')
 
@@ -139,7 +140,7 @@ def fetch_latest_ticker(symbol):
 
 def update_stop_loss_for_profitable_trades(stop_loss_percentage=None, pnl_threshold=None):
     try:
-        open_trades = fetch_open_trades()
+        open_trades = fetch_open_trades2()
         
         pairs = fetch_symbols()
 
@@ -235,11 +236,18 @@ def main():
         contract_abi = json.load(f)
     contract = web3.eth.contract(address=contract_address, abi=contract_abi)
 
-    open_trades = fetch_open_trades()
-    print(open_trades)
+    while True:
+        try:
+            open_trades = fetch_open_trades2()
+            print(open_trades)
 
-    # Use the parsed arguments
-    update_stop_loss_for_profitable_trades(stop_loss_percentage=args.stop_loss_percentage, pnl_threshold=args.pnl_threshold)
+            # Use the parsed arguments
+            update_stop_loss_for_profitable_trades(stop_loss_percentage=args.stop_loss_percentage, pnl_threshold=args.pnl_threshold)
+        except Exception as e:
+            logging.error(f"An error occurred: {e}")
+
+        # Wait for 5 minutes before running again
+        time.sleep(300)
 
 if __name__ == "__main__":
     main()

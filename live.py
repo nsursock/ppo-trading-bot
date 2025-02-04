@@ -17,6 +17,8 @@ import pprint  # Add this import at the top of your file
 from tabulate import tabulate  # Import tabulate
 
 from interactions import setup_env, get_nonce, fetch_symbols, open_trade, close_trade, fetch_open_trades, close_all_open_trades
+from man_adjust_sl import update_stop_loss_for_profitable_trades, fetch_open_trades2
+import time
 
 # Load environment variables
 # from dotenv import load_dotenv
@@ -356,6 +358,21 @@ def setup_logging():
 
     # Ensure no propagation to root logger
     logger.propagate = False
+    
+
+def stop_loss_listener():
+    while True:
+        try:
+            open_trades = fetch_open_trades2()
+            print(open_trades)
+
+            # Use the parsed arguments
+            update_stop_loss_for_profitable_trades(stop_loss_percentage=10, pnl_threshold=100)
+        except Exception as e:
+            logging.error(f"An error occurred: {e}")
+
+        # Wait for 5 minutes before running again
+        time.sleep(300)
 
 if __name__ == "__main__":
     from utilities import send_error_email
@@ -379,6 +396,9 @@ if __name__ == "__main__":
         env = 'test'
         env_file = None
     setup_env(env_file)
+    
+    sl_thread = threading.Thread(target=stop_loss_listener, daemon=True)
+    sl_thread.start()
     
     send_error_email("Live Trading Started", f"Live trading for a trained PPO model on crypto (env: {env}).")
 
