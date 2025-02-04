@@ -208,8 +208,8 @@ def main():
     # Set up argument parser
     parser = argparse.ArgumentParser(description='Update stop-loss for profitable trades.')
     parser.add_argument('-e', '--env', type=str, help='Environment to use (sepolia or arbitrum).')
-    parser.add_argument('-s', '--stop_loss_percentage', type=float, default=3, help='Stop-loss percentage to use.')
-    parser.add_argument('-p', '--pnl_threshold', type=float, default=None, help='PnL threshold percentage.')
+    parser.add_argument('-s', '--stop_loss_percentage', type=float, default=10, help='Stop-loss percentage to use.')
+    parser.add_argument('-p', '--pnl_threshold', type=float, default=100, help='PnL threshold percentage.')
 
     # Parse the arguments
     args = parser.parse_args()
@@ -236,18 +236,18 @@ def main():
         contract_abi = json.load(f)
     contract = web3.eth.contract(address=contract_address, abi=contract_abi)
 
-    while True:
-        try:
-            open_trades = fetch_open_trades2()
-            print(open_trades)
+    # while True:
+    try:
+        open_trades = fetch_open_trades2()
+        print(open_trades)
 
-            # Use the parsed arguments
-            update_stop_loss_for_profitable_trades(stop_loss_percentage=args.stop_loss_percentage, pnl_threshold=args.pnl_threshold)
-        except Exception as e:
-            logging.error(f"An error occurred: {e}")
+        # Use the parsed arguments
+        update_stop_loss_for_profitable_trades(stop_loss_percentage=args.stop_loss_percentage, pnl_threshold=args.pnl_threshold)
+    except Exception as e:
+        logging.error(f"An error occurred: {e}")
 
-        # Wait for 5 minutes before running again
-        time.sleep(300)
+        # # Wait for 5 minutes before running again
+        # time.sleep(300)
 
 if __name__ == "__main__":
     main()

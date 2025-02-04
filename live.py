@@ -397,8 +397,8 @@ if __name__ == "__main__":
         env_file = None
     setup_env(env_file)
     
-    sl_thread = threading.Thread(target=stop_loss_listener, daemon=True)
-    sl_thread.start()
+    # sl_thread = threading.Thread(target=stop_loss_listener, daemon=True)
+    # sl_thread.start()
     
     send_error_email("Live Trading Started", f"Live trading for a trained PPO model on crypto (env: {env}).")
 
