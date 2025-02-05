@@ -15,7 +15,7 @@ def random_date(start, end):
 
 financial_params = {
     'initial_balance': 200,
-    'leverage_min': 1,
+    'leverage_min': 2,
     'leverage_max': 150,
     'collateral_min': 5,
     'collateral_max': 5_000_000,
@@ -33,8 +33,8 @@ financial_params = {
 }
 
 constant_params = {
-    'adjust_leverage': True,
-    'risk_mgmt': 'percentage',
+    'adjust_leverage': False,
+    'risk_mgmt': 'fractals',
     'reverse_actions': False,
     'trading_fee': 0.008,  # 0.1% trading fee
     'slippage': 0.0005,    # 0.05% slippage 
@@ -92,17 +92,24 @@ basic_params = {
     'basic_risk_mgmt': True
 }
 
+field_interval = '12h'
+field_interval_model = '1d'
+field_target = 25
+field_version = 'conf'
+field_is_train_model = False
+
 unittest_params = {
+    'target_num_symbols': field_target,
     'market_data': 'random', # 'original' or 'random' or 'synthetic'
     'synth_mode': 'testing', # 'training' or 'testing'
     # 'symbols': sorted(['ADA', 'BNB', 'EOS', 'ETH', 'IOTA', 'LTC', 'NEO', 'QTUM', 'XLM', 'XRP']),
     # 'symbols': sorted(['BTC', 'ETC', 'ICX', 'LINK', 'NULS', 'ONT', 'TRX', 'LTC', 'NEO', 'VET']),
     # 'symbols': sorted(['LTC', 'DOGE', 'SHIB', 'PEOPLE', 'FLOKI', 'PEPE', 'MEME', 'BONK', 'WIF', 'BOME']),
-    'end_time': '2021-06-30', #'2021-05-25', #random_date(start_date, end_date).strftime('%Y-%m-%d'),
-    'limit': 6 * 175 * 4, #round(24 * 45), # 240,
-    'interval': '1h',
-    'boost_factor': 20,
-    'model_name': 'model_ppo_crypto_trading_div50_1h_perc', #'model_ppo_crypto_trading_unit_12h',
+    'end_time': '2021-12-31', #'2021-05-25', #random_date(start_date, end_date).strftime('%Y-%m-%d'),
+    'limit': 2 * 350, #round(24 * 45), # 240,
+    'interval': field_interval,
+    # 'boost_factor': 20,
+    'model_name': f'model_ppo_crypto_trading_v{field_version}_n{field_target}_i{field_interval_model}',
     'basic_risk_mgmt': True
 }
 
@@ -142,7 +149,7 @@ live_params = {
 }
 
 training_params = {
-    'train_model': False,
+    'train_model': field_is_train_model,
     'timesteps': 1_000_000,
     'num_episodes': 10
 }

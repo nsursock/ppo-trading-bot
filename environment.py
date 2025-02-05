@@ -324,7 +324,7 @@ class TradingEnvironment(gym.Env):
         #     print(f"Collateral is None for symbol {symbol_index}")
         #     print(f"Risk per trade: {risk_per_trade}, Balance: {self.balance}, Kelly fraction: {kelly_fraction}")
 
-        leverage = self.calculate_leverage(symbol_index, collateral)[self.current_step]
+        leverage = self.calculate_leverage(symbol_index, collateral)
         if self.params['adjust_leverage']:
             leverage = self.adjust_leverage(leverage, self.params['boost_factor'])
         position_size = collateral / current_price
@@ -451,72 +451,104 @@ class TradingEnvironment(gym.Env):
         self.positions[symbol_index] = {}
         self.cooldowns[symbol_index] = self.cooldown_period  # Set cooldown after closing a position
         
-    def adjust_leverage(self, base_leverage, boost_factor=3):
-        # Define volatility-based adjustment factors for each interval
-        interval_volatility_factors = {
-            '1s': 0.2,
-            '1m': 0.3,   # Low volatility for short intervals
-            '3m': 0.5,
-            '5m': 0.7,
-            '15m': 0.9,
-            '30m': 1.1,
-            '1h': 1.3,
-            '2h': 1.5,
-            '4h': 1.8,
-            '6h': 2.0,
-            '8h': 2.3,
-            '12h': 2.6,
-            '1d': 3.0,
-            '3d': 4.0,   # Higher volatility for long intervals
-            '1w': 5.0,
-            '1M': 6.0    # Highest volatility for very long intervals
-        }
+    # def adjust_leverage(self, base_leverage, boost_factor=3):
+    #     # Define volatility-based adjustment factors for each interval
+    #     interval_volatility_factors = {
+    #         '1s': 0.2,
+    #         '1m': 0.3,   # Low volatility for short intervals
+    #         '3m': 0.5,
+    #         '5m': 0.7,
+    #         '15m': 0.9,
+    #         '30m': 1.1,
+    #         '1h': 1.3,
+    #         '2h': 1.5,
+    #         '4h': 1.8,
+    #         '6h': 2.0,
+    #         '8h': 2.3,
+    #         '12h': 2.6,
+    #         '1d': 3.0,
+    #         '3d': 4.0,   # Higher volatility for long intervals
+    #         '1w': 5.0,
+    #         '1M': 6.0    # Highest volatility for very long intervals
+    #     }
         
-        interval = self.params.get('interval', '1d')  # Default to '1d' if no interval is provided
+    #     interval = self.params.get('interval', '1d')  # Default to '1d' if no interval is provided
         
-        # Check if the interval is in the dictionary, with a default warning
-        if interval not in interval_volatility_factors:
-            logging.warning(f"Interval {interval} is not supported.")
-            return base_leverage  # Return base leverage if unsupported interval is encountered
+    #     # Check if the interval is in the dictionary, with a default warning
+    #     if interval not in interval_volatility_factors:
+    #         logging.warning(f"Interval {interval} is not supported.")
+    #         return base_leverage  # Return base leverage if unsupported interval is encountered
 
-        # Inverse volatility factor: increase leverage when volatility is low, decrease when high
-        volatility_factor = interval_volatility_factors[interval]
-        adjusted_leverage = base_leverage * boost_factor / volatility_factor  # Inverse adjustment based on volatility
+    #     # Inverse volatility factor: increase leverage when volatility is low, decrease when high
+    #     volatility_factor = interval_volatility_factors[interval]
+    #     adjusted_leverage = base_leverage * boost_factor / volatility_factor  # Inverse adjustment based on volatility
         
+    #     # Clamp adjusted leverage between minimum and maximum limits
+    #     min_leverage = self.params.get('leverage_min', 1)  # Default minimum leverage to 1
+    #     max_leverage = self.params.get('leverage_max', 150)  # Default maximum leverage to 150
+    #     adjusted_leverage = max(min_leverage, min(adjusted_leverage, max_leverage))
+
+    #     return adjusted_leverage
+        
+    # def calculate_leverage(self, symbol_index, collateral, volume_factor_base=10000):
+    #     volumes = self.data_matrix[:, symbol_index, self.mapping['volume']]
+    #     closes = self.data_matrix[:, symbol_index, self.mapping['close']]
+    #     volatilities = np.std(closes)
+        
+    #     # Handle cases where volatility is NaN or zero
+    #     valid_volatilities = np.where((~np.isnan(volatilities)) & (volatilities != 0), volatilities, np.inf)
+    
+    #     # Expand dimensions of position_sizes to match volumes
+    #     position_sizes = (collateral / valid_volatilities)
+    #     adjusted_position_sizes = position_sizes * (volumes / volume_factor_base)
+    #     position_values = adjusted_position_sizes * closes
+    #     leverages = position_values / collateral
+        
+    #     # Normalize leverages
+    #     leverage_min = np.min(leverages)
+    #     leverage_max = np.max(leverages)
+        
+    #     if leverage_max == leverage_min:
+    #         normalized_leverages = np.full_like(leverages, self.params['leverage_min'])
+    #     else:
+    #         normalized_leverages = self.params['leverage_min'] + (leverages - leverage_min) * (self.params['leverage_max'] - self.params['leverage_min']) / (leverage_max - leverage_min)
+    
+    #     # Handle NaN values
+    #     normalized_leverages = np.where(np.isnan(normalized_leverages), self.params['leverage_min'], normalized_leverages)
+        
+    #     return np.round(normalized_leverages).astype(int) 
+    
+    def calculate_leverage(self, symbol_index, collateral, volume_factor_base=10000):
+        # Extract necessary indicators from the data matrix
+        closes = self.data_matrix[:, symbol_index, self.mapping['close']]
+        vwap = self.data_matrix[:, symbol_index, self.mapping['vwap']]
+        rsi = self.data_matrix[:, symbol_index, self.mapping['rsi']]
+        macd_hist = self.data_matrix[:, symbol_index, self.mapping['macd_hist']]
+        boll_lband = self.data_matrix[:, symbol_index, self.mapping['boll_lband']]
+        atr = self.data_matrix[:, symbol_index, self.mapping['atr']]
+        volume = self.data_matrix[:, symbol_index, self.mapping['volume']]
+
+        # Compute confidence score based on indicators and volume
+        confidence_score = (
+            (vwap[-1] > closes[-1]) * 0.15 +
+            (rsi[-1] < 30) * 0.15 +
+            (macd_hist[-1] > 0) * 0.15 +
+            (closes[-1] < boll_lband[-1]) * 0.15 +
+            (atr[-1] < np.mean(atr)) * 0.15 +
+            (volume[-1] > np.mean(volume)) * 0.25  # Higher weight for volume
+        )
+
+        # Adjust leverage based on confidence score
+        base_leverage = collateral / np.std(closes)
+        adjusted_leverage = base_leverage * (1 + confidence_score)
+
         # Clamp adjusted leverage between minimum and maximum limits
-        min_leverage = self.params.get('leverage_min', 1)  # Default minimum leverage to 1
-        max_leverage = self.params.get('leverage_max', 200)  # Default maximum leverage to 150
+        min_leverage = self.params.get('leverage_min', 1)
+        max_leverage = self.params.get('leverage_max', 150)
         adjusted_leverage = max(min_leverage, min(adjusted_leverage, max_leverage))
 
-        return adjusted_leverage
-        
-    def calculate_leverage(self, symbol_index, collateral, volume_factor_base=10000):
-        volumes = self.data_matrix[:, symbol_index, self.mapping['volume']]
-        closes = self.data_matrix[:, symbol_index, self.mapping['close']]
-        volatilities = np.std(closes)
-        
-        # Handle cases where volatility is NaN or zero
-        valid_volatilities = np.where((~np.isnan(volatilities)) & (volatilities != 0), volatilities, np.inf)
-    
-        # Expand dimensions of position_sizes to match volumes
-        position_sizes = (collateral / valid_volatilities)
-        adjusted_position_sizes = position_sizes * (volumes / volume_factor_base)
-        position_values = adjusted_position_sizes * closes
-        leverages = position_values / collateral
-        
-        # Normalize leverages
-        leverage_min = np.min(leverages)
-        leverage_max = np.max(leverages)
-        
-        if leverage_max == leverage_min:
-            normalized_leverages = np.full_like(leverages, self.params['leverage_min'])
-        else:
-            normalized_leverages = self.params['leverage_min'] + (leverages - leverage_min) * (self.params['leverage_max'] - self.params['leverage_min']) / (leverage_max - leverage_min)
-    
-        # Handle NaN values
-        normalized_leverages = np.where(np.isnan(normalized_leverages), self.params['leverage_min'], normalized_leverages)
-        
-        return np.round(normalized_leverages).astype(int) 
+        # Return a scalar value instead of an array
+        return np.round(adjusted_leverage).astype(int)
     
     def interval_to_seconds(self,interval):
         interval_mapping = {

@@ -633,13 +633,18 @@ def initialize_environments(financial_params, training_params, plot_dir='.'):
     test_env = None
     agent = None
     market_conditions = {}
+    
+    n = financial_params['target_num_symbols']
         
     if financial_params['market_data'] == 'random':
         # Preprocess data using the utility function
-        symbols = ['GAINS_200']
+        symbols = [f'GAINS_{n * 4}']
         if symbols[0].startswith('GAINS_'):
             count = int(symbols[0].split('_')[1])
             symbols = select_cryptos(count)
+            if 'BTC' not in symbols:
+                symbols = sorted(symbols[:-1] + ['BTC'])
+    
             logging.info(f"Selected top {count} cryptos: {symbols}")
         selected_params['symbols'] = sorted(symbols)
         
@@ -657,7 +662,7 @@ def initialize_environments(financial_params, training_params, plot_dir='.'):
         interval = selected_params['interval']
         limit = selected_params['limit']
         end_time = selected_params['end_time']
-        data_matrix, timestamps, mapping, valid_symbols, _ = preprocess_data(50, symbols, interval, limit, end_time=end_time)
+        data_matrix, timestamps, mapping, valid_symbols, _ = preprocess_data(n, symbols, interval, limit, end_time=end_time)
         end_time = timestamps[-1]
         selected_params['end_time'] = end_time
         selected_params['symbols'] = valid_symbols

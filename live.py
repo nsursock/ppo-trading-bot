@@ -246,8 +246,8 @@ def on_open(ws):
     financial_params = selected_params
     # financial_params['cooldown_period'] = 1
     # financial_params['kelly_fraction'] = 0.5
-    financial_params['initial_balance'] = 200
-    financial_params['boost_factor'] = 10
+    financial_params['initial_balance'] = 1000
+    # financial_params['boost_factor'] = 10
     financial_params['basic_risk_mgmt'] = True
     
     # 
@@ -256,9 +256,9 @@ def on_open(ws):
         financial_params['limit'] = 288
         financial_params['symbols'] = sorted(['BTC', 'ETH', 'SOL', 'NEAR', 'TIA', 'MANTA', 'SEI', 'IOTX', 'GMX', 'TAO'])
     else:
-        financial_params['symbols'] = select_cryptos(100, network='sepolia')
-        financial_params['interval'] = '1h'  # for debugging
-        financial_params['limit'] = 6 * 120 * 4
+        financial_params['symbols'] = select_cryptos(financial_params['target_num_symbols'] * 2, network='sepolia')
+        financial_params['interval'] = '4h'  # for debugging
+        financial_params['limit'] = 6 * 120
         # financial_params['symbols'] = sorted(['BTC', 'ETH', 'SOL', 'NEAR', 'TIA', 'MANTA', 'SEI', 'IOTX', 'GMX', 'WIF'])
     
     
@@ -266,7 +266,7 @@ def on_open(ws):
     logging.debug(f"Financial parameters set: {financial_params}")
 
     # # Prepare historical data
-    data_matrix, timestamps, mapping, valid_symbols, current_window = preprocess_data(50, financial_params['symbols'], financial_params['interval'], financial_params['limit'])
+    data_matrix, timestamps, mapping, valid_symbols, current_window = preprocess_data(financial_params['target_num_symbols'], financial_params['symbols'], financial_params['interval'], financial_params['limit'])
     financial_params['symbols'] = valid_symbols
     
     # Initialize the environment with live data
@@ -376,14 +376,18 @@ def stop_loss_listener():
 
 if __name__ == "__main__":
     from utilities import send_error_email
+    from parameters import selected_params
     global model_path, env
     parser = argparse.ArgumentParser(description='Live trading for a trained PPO model on crypto.')
-    parser.add_argument('-m', '--model_path', type=str, help='Path to the trained model file')
+    parser.add_argument('-m', '--model_path', default=None, type=str, help='Path to the trained model file')
     parser.add_argument('-e', '--env', default=None, type=str, help='Environment to use (sepolia or arbitrum).')
     
     args = parser.parse_args()
-    model_path = args.model_path
     
+    model_path = args.model_path
+    if model_path is None:
+        model_path = f"{selected_params['model_name']}.zip"
+   
      # Load the appropriate environment file
     if args.env:
         if args.env == 'rail':
