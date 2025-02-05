@@ -25,16 +25,16 @@ financial_params = {
     'take_profit_max': 9,
     'risk_per_trade_min': 0.025,
     'risk_per_trade_max': 0.1,
-    'tp_mult_perc': 0.35,
+    'tp_mult_perc': 0.5,
     'sl_mult_perc': 0.2,
-    'cooldown_period': 1,
+    'cooldown_period': 5,
     'trading_penalty': 0.5,
     'kelly_fraction': 0.5,
 }
 
 constant_params = {
     'adjust_leverage': True,
-    'risk_mgmt': 'fractals',
+    'risk_mgmt': 'percentage',
     'reverse_actions': False,
     'trading_fee': 0.008,  # 0.1% trading fee
     'slippage': 0.0005,    # 0.05% slippage 
@@ -99,10 +99,10 @@ unittest_params = {
     # 'symbols': sorted(['BTC', 'ETC', 'ICX', 'LINK', 'NULS', 'ONT', 'TRX', 'LTC', 'NEO', 'VET']),
     # 'symbols': sorted(['LTC', 'DOGE', 'SHIB', 'PEOPLE', 'FLOKI', 'PEPE', 'MEME', 'BONK', 'WIF', 'BOME']),
     'end_time': '2021-06-30', #'2021-05-25', #random_date(start_date, end_date).strftime('%Y-%m-%d'),
-    'limit': 6 * 175, #round(24 * 45), # 240,
-    'interval': '4h',
-    'boost_factor': 30,
-    'model_name': 'model_ppo_crypto_trading_div50_4h', #'model_ppo_crypto_trading_unit_12h',
+    'limit': 6 * 175 * 4, #round(24 * 45), # 240,
+    'interval': '1h',
+    'boost_factor': 20,
+    'model_name': 'model_ppo_crypto_trading_div50_1h_perc', #'model_ppo_crypto_trading_unit_12h',
     'basic_risk_mgmt': True
 }
 
