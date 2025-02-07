@@ -244,9 +244,9 @@ def on_open(ws):
     # close_all_open_trades()
     
     financial_params = selected_params
-    # financial_params['cooldown_period'] = 1
+    financial_params['cooldown_period'] = 1
     # financial_params['kelly_fraction'] = 0.5
-    financial_params['initial_balance'] = 1000
+    financial_params['initial_balance'] = 200
     # financial_params['boost_factor'] = 10
     financial_params['basic_risk_mgmt'] = True
     
