@@ -312,11 +312,15 @@ def on_open(ws):
 def start_trading_bot():
     websocket_url = "wss://stream.binance.com:9443/ws"
     logging.info(f"Connecting to WebSocket at {websocket_url}")
-    ws = WebSocketApp(websocket_url, 
-                      on_message=on_message, 
-                      on_error=on_error, 
-                      on_close=on_close)
-    ws.on_open = on_open
+    ws = WebSocketApp(
+        websocket_url, 
+        on_message=on_message, 
+        on_error=on_error, 
+        on_close=on_close,
+        on_open=on_open,
+        ping_interval=60,  # Send a ping every 60 seconds
+        ping_timeout=10    # Timeout if no pong is received within 10 seconds
+    )
     ws.run_forever()
     
 import logging
