@@ -302,6 +302,21 @@ class TradingEnvironment(gym.Env):
 
         return win_probability, win_loss_ratio
 
+    def calculate_risk_factor(self):
+        """
+        Calculate a risk factor based on the current balance.
+        The lower the balance, the higher the risk factor.
+        """
+        initial_balance = self.params['initial_balance']
+        min_balance = self.params['collateral_min']
+        
+        # Calculate risk factor as a percentage of the initial balance
+        risk_factor = max(1, initial_balance / max(self.balance, min_balance))
+        
+        # Cap the risk factor to prevent excessive risk-taking
+        max_risk_factor = 5  # Adjust this value as needed
+        return min(risk_factor, max_risk_factor)
+
     def open_position(self, symbol_index, type, current_price):
         # if self.cooldowns[symbol_index] > 0:
         #     logging.debug(f"Cannot open position for symbol {symbol_index} due to cooldown.")
@@ -313,8 +328,9 @@ class TradingEnvironment(gym.Env):
         # Calculate the Kelly fraction
         kelly_fraction = self.calculate_kelly_fraction(win_probability, win_loss_ratio, self.params['kelly_fraction'])
 
-        # Adjust risk per trade using the Kelly fraction
-        risk_per_trade = max(self.params['risk_per_trade_min'], min(kelly_fraction, self.params['risk_per_trade_max']))
+        # Adjust risk per trade using the Kelly fraction and risk factor
+        risk_factor = self.calculate_risk_factor()
+        risk_per_trade = max(self.params['risk_per_trade_min'], min(kelly_fraction * risk_factor, self.params['risk_per_trade_max']))
         
         # Progressive collateral calculation: start with a lower percentage of the balance
         initial_collateral_factor = risk_per_trade #0.1  # Start with 10% of the balance
@@ -325,8 +341,12 @@ class TradingEnvironment(gym.Env):
         #     print(f"Risk per trade: {risk_per_trade}, Balance: {self.balance}, Kelly fraction: {kelly_fraction}")
 
         leverage = self.calculate_leverage(symbol_index, collateral)
-        if self.params['adjust_leverage']:
-            leverage = self.adjust_leverage(leverage, self.params['boost_factor'])
+        # if leverage < 50:
+        #     logging.debug(f"Leverage {leverage} is below 50, not opening position for symbol {symbol_index}.")
+        #     return None, None, None, None  # Ensure a tuple is returned
+
+        # if self.params['adjust_leverage']:
+        #     leverage = self.adjust_leverage(leverage, self.params['boost_factor'])
         position_size = collateral / current_price
 
         # Compute SL, TP, and liquidation prices
@@ -538,9 +558,10 @@ class TradingEnvironment(gym.Env):
             (volume[-1] > np.mean(volume)) * 0.25  # Higher weight for volume
         )
 
-        # Adjust leverage based on confidence score
+        # Adjust leverage based on confidence score and risk factor
+        risk_factor = self.calculate_risk_factor()
         base_leverage = collateral / np.std(closes)
-        adjusted_leverage = base_leverage * (1 + confidence_score)
+        adjusted_leverage = base_leverage * (1 + confidence_score) * risk_factor
 
         # Clamp adjusted leverage between minimum and maximum limits
         min_leverage = self.params.get('leverage_min', 1)
@@ -839,12 +860,14 @@ class TradingEnvironment(gym.Env):
                 if self.positions[i]:
                     self.close_position(i, current_prices[i], 'long')
                 collateral, leverage, tp_price, sl_price = self.open_position(i, 'long', current_prices[i])
-                infos['orders'][self.params['symbols'][i]] = { 'type': 'open_long', 'collateral': collateral, 'leverage': leverage, 'tp_price': tp_price, 'sl_price': sl_price }
+                if collateral is not None:
+                    infos['orders'][self.params['symbols'][i]] = { 'type': 'open_long', 'collateral': collateral, 'leverage': leverage, 'tp_price': tp_price, 'sl_price': sl_price }
             elif self.balance >= self.params['collateral_min'] and action[i] == self.actions_available['short']:  # Short
                 if self.positions[i]:
                     self.close_position(i, current_prices[i], 'short')
                 collateral, leverage, tp_price, sl_price = self.open_position(i, 'short', current_prices[i])
-                infos['orders'][self.params['symbols'][i]] = { 'type': 'open_short', 'collateral': collateral, 'leverage': leverage, 'tp_price': tp_price, 'sl_price': sl_price }
+                if collateral is not None:
+                    infos['orders'][self.params['symbols'][i]] = { 'type': 'open_short', 'collateral': collateral, 'leverage': leverage, 'tp_price': tp_price, 'sl_price': sl_price }
             elif action[i] == self.actions_available['close']:  # Close
                 if self.positions[i]:
                     self.close_position(i, current_prices[i], 'close')
@@ -854,7 +877,8 @@ class TradingEnvironment(gym.Env):
                     current_type = 'long' if self.positions[i]['type'] == 'short' else 'short'
                     self.close_position(i, current_prices[i], current_type)
                     collateral, leverage, tp_price, sl_price = self.open_position(i, current_type, current_prices[i])
-                    infos['orders'][self.params['symbols'][i]] = { 'type': f'open_{current_type}', 'collateral': collateral, 'leverage': leverage, 'tp_price': tp_price, 'sl_price': sl_price }
+                    if collateral is not None:
+                        infos['orders'][self.params['symbols'][i]] = { 'type': f'open_{current_type}', 'collateral': collateral, 'leverage': leverage, 'tp_price': tp_price, 'sl_price': sl_price }
             # elif action[i] == self.actions_available['trail']:  # Trailing Stop
             #     self.update_trailing_stop(i, current_prices[i])
 

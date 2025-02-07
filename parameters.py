@@ -24,10 +24,10 @@ financial_params = {
     'take_profit_min': 0.1,
     'take_profit_max': 9,
     'risk_per_trade_min': 0.025,
-    'risk_per_trade_max': 0.1,
+    'risk_per_trade_max': 0.2,
     'tp_mult_perc': 0.5,
     'sl_mult_perc': 0.2,
-    'cooldown_period': 5,
+    'cooldown_period': 1,
     'trading_penalty': 0.5,
     'kelly_fraction': 0.5,
 }
