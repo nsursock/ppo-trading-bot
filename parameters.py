@@ -14,7 +14,7 @@ def random_date(start, end):
     return start + timedelta(days=random.randint(0, (end - start).days))
 
 financial_params = {
-    'initial_balance': 1000,
+    'initial_balance': 500,
     'leverage_min': 2,
     'leverage_max': 150,
     'collateral_min': 5,
@@ -92,7 +92,7 @@ basic_params = {
     'basic_risk_mgmt': True
 }
 
-field_interval = '1d'
+field_interval = '4h'
 field_interval_model = '1d'
 field_target = 25
 field_version = 'conf'
@@ -100,17 +100,17 @@ field_is_train_model = False
 
 unittest_params = {
     'target_num_symbols': field_target,
-    'market_data': 'original', # 'original' or 'random' or 'synthetic'
+    'market_data': 'random', # 'original' or 'random' or 'synthetic'
     'synth_mode': 'testing', # 'training' or 'testing'
     # 'symbols': sorted(['ADA', 'BNB', 'EOS', 'ETH', 'IOTA', 'LTC', 'NEO', 'QTUM', 'XLM', 'XRP']),
-    'symbols': sorted(['BTC', 'ETC', 'ICX', 'LINK', 'NULS', 'ONT', 'TRX', 'LTC', 'NEO', 'VET']),
+    # 'symbols': sorted(['BTC', 'ETC', 'ICX', 'LINK', 'NULS', 'ONT', 'TRX', 'LTC', 'NEO', 'VET']),
     # 'symbols': sorted(['LTC', 'DOGE', 'SHIB', 'PEOPLE', 'FLOKI', 'PEPE', 'MEME', 'BONK', 'WIF', 'BOME']),
-    'end_time': '2021-12-31', #'2021-05-25', #random_date(start_date, end_date).strftime('%Y-%m-%d'),
-    'limit': 350, #round(24 * 45), # 240,
+    'end_time': '2021-06-30', #'2021-05-25', #random_date(start_date, end_date).strftime('%Y-%m-%d'),
+    'limit': 175, #350, #round(24 * 45), # 240,
     'interval': field_interval,
     # 'boost_factor': 20,
     'model_name': f'model_ppo_crypto_trading_v{field_version}_n{field_target}_i{field_interval_model}',
-    'basic_risk_mgmt': False
+    'basic_risk_mgmt': True
 }
 
 optim_params = {
