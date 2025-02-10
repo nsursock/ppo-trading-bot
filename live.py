@@ -226,10 +226,17 @@ def on_message(ws, message):
 
 def on_error(ws, error):
     logging.error(f"Error: {error}")
+    # Attempt to reconnect
+    logging.info("Attempting to reconnect...")
+    time.sleep(5)  # Wait for 5 seconds before reconnecting
+    start_trading_bot()  # Restart the trading bot
 
 def on_close(ws, close_status_code, close_msg):
-    # close_all_open_trades()
     logging.info(f"WebSocket closed: {close_status_code} - {close_msg}")
+    # Attempt to reconnect
+    logging.info("Attempting to reconnect...")
+    time.sleep(5)  # Wait for 5 seconds before reconnecting
+    start_trading_bot()  # Restart the trading bot
 
 def on_open(ws):
     global live_env, model, financial_params, valid_symbols, current_window
