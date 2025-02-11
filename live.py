@@ -266,7 +266,7 @@ def on_open(ws):
         financial_params['symbols'] = select_cryptos(financial_params['target_num_symbols'] * 2, network='sepolia')
         financial_params['interval'] = '4h'  # for debugging
         financial_params['limit'] = 6 * 120
-        financial_params['target_num_symbols'] = 25
+        # financial_params['target_num_symbols'] = 25
         # financial_params['symbols'] = sorted(['BTC', 'ETH', 'SOL', 'NEAR', 'TIA', 'MANTA', 'SEI', 'IOTX', 'GMX', 'WIF'])
     
     

@@ -94,7 +94,7 @@ basic_params = {
 
 field_interval = '1d'
 field_interval_model = '1d'
-field_target = 10
+field_target = 25
 field_version = 'conf'
 field_is_train_model = False
 
