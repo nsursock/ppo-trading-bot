@@ -235,11 +235,11 @@ class TradingEnvironment(gym.Env):
             self.fractal_counter += 1  # Increment fractal counter
             logging.debug(f"Using fractals for SL and TP: Fractal High: {fractal_high}, Fractal Low: {fractal_low}")
             if type == 'long':
-                sl_price = fractal_low
-                tp_price = fractal_high
+                sl_price = fractal_low * 1.05  # Make SL 5% inferior
+                tp_price = fractal_high * 0.95  # Make TP 5% inferior
             elif type == 'short':
-                sl_price = fractal_high
-                tp_price = fractal_low
+                sl_price = fractal_high * 0.95  # Make SL 5% inferior
+                tp_price = fractal_low * 1.05  # Make TP 5% inferior
             else:
                 sl_price, tp_price = None, None
         else:
@@ -328,6 +328,10 @@ class TradingEnvironment(gym.Env):
         # if self.params['adjust_leverage']:
         #     leverage = self.adjust_leverage(leverage, self.params['boost_factor'])
         position_size = collateral / current_price
+        
+        if leverage < 35:
+            logging.debug(f"Leverage is too low for symbol {symbol_index}. Returning None.")
+            return None, None, None, None
 
         # Compute SL, TP, and liquidation prices
         sl_price, tp_price, liq_price, max_price = self.compute_prices(symbol_index, type, current_price, leverage)
@@ -347,7 +351,7 @@ class TradingEnvironment(gym.Env):
         # Calculate borrowing fees for the initial hour
         borrowing_fee = collateral * self.params['borrowing_fee_per_hour']
         self.balance -= borrowing_fee
-
+        
         self.positions[symbol_index] = {
             'open_time': self.timestamps[self.current_step],
             'type': type,
@@ -839,12 +843,14 @@ class TradingEnvironment(gym.Env):
                 if self.positions[i]:
                     self.close_position(i, current_prices[i], 'long')
                 collateral, leverage, tp_price, sl_price = self.open_position(i, 'long', current_prices[i])
-                infos['orders'][self.params['symbols'][i]] = { 'type': 'open_long', 'collateral': collateral, 'leverage': leverage, 'tp_price': tp_price, 'sl_price': sl_price }
+                if collateral is not None:
+                    infos['orders'][self.params['symbols'][i]] = { 'type': 'open_long', 'collateral': collateral, 'leverage': leverage, 'tp_price': tp_price, 'sl_price': sl_price }
             elif self.balance >= self.params['collateral_min'] and action[i] == self.actions_available['short']:  # Short
                 if self.positions[i]:
                     self.close_position(i, current_prices[i], 'short')
                 collateral, leverage, tp_price, sl_price = self.open_position(i, 'short', current_prices[i])
-                infos['orders'][self.params['symbols'][i]] = { 'type': 'open_short', 'collateral': collateral, 'leverage': leverage, 'tp_price': tp_price, 'sl_price': sl_price }
+                if collateral is not None:
+                    infos['orders'][self.params['symbols'][i]] = { 'type': 'open_short', 'collateral': collateral, 'leverage': leverage, 'tp_price': tp_price, 'sl_price': sl_price }
             elif action[i] == self.actions_available['close']:  # Close
                 if self.positions[i]:
                     self.close_position(i, current_prices[i], 'close')
@@ -854,7 +860,8 @@ class TradingEnvironment(gym.Env):
                     current_type = 'long' if self.positions[i]['type'] == 'short' else 'short'
                     self.close_position(i, current_prices[i], current_type)
                     collateral, leverage, tp_price, sl_price = self.open_position(i, current_type, current_prices[i])
-                    infos['orders'][self.params['symbols'][i]] = { 'type': f'open_{current_type}', 'collateral': collateral, 'leverage': leverage, 'tp_price': tp_price, 'sl_price': sl_price }
+                    if collateral is not None:
+                        infos['orders'][self.params['symbols'][i]] = { 'type': f'open_{current_type}', 'collateral': collateral, 'leverage': leverage, 'tp_price': tp_price, 'sl_price': sl_price }
             # elif action[i] == self.actions_available['trail']:  # Trailing Stop
             #     self.update_trailing_stop(i, current_prices[i])
 
