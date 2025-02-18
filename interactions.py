@@ -13,6 +13,7 @@ import logging
 from web3.exceptions import ContractLogicError, ContractCustomError, Web3RPCError
 import traceback
 from utilities import send_error_email
+import re
 
 # # Configure logging
 # logging.basicConfig(level=logging.INFO)
@@ -70,6 +71,8 @@ error_codes_1 = {
 }
 
 error_codes_2 = {
+    "34f38ee9": "WrongLeverage",
+    "6c661d58": "AboveExposureLimits",
     "0ad1e31b": "AboveMax",
     "23369fa6": "AlreadyExists",
     "10906acb": "BelowMin",
@@ -560,7 +563,34 @@ def open_trade(nonce, latest_close_price, pairs, symbol, action, collateral=200,
             decode_error(error, tx_data)
         else:
             decode_revert_reason(error)
-        send_error_email("Trade Opening Error", f"Contract logic error occurred: {error}")
+        
+        # Extract the error code
+        error_code = error.args[0]
+        # print(error_code)
+        
+        # error_code = error_code[0]
+        # print(error_code)
+
+        # Check if the error code is a string with '0x' prefix
+        if isinstance(error_code, str) and error_code.startswith('0x'):
+            error_code = error_code[2:]  # Remove the '0x' prefix
+
+        # Now you can use error_code for further processing
+        
+        # Use regex to find the corresponding error message
+        error_message = "Unknown error"
+        for code_dict in [error_codes_1, error_codes_2]:
+            for code, message in code_dict.items():
+                if re.fullmatch(code, error_code):
+                    error_message = message
+                    break
+            if error_message != "Unknown error":
+                break
+        
+        logging.error(f"Error: code {error_code}, message: {error_message}")
+        logging.error(f"Trade details: {_tradeForJsonDump}")
+        
+        send_error_email("Trade Opening Error", f"Contract logic error occurred: {error_code} ({error_message})\nTrade details: {_tradeForJsonDump}")
     except Exception as error:
         logging.error(f'An unexpected error occurred: {error}', exc_info=True)
         stack_trace = traceback.format_exc()

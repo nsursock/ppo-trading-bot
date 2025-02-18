@@ -258,11 +258,11 @@ def on_open(ws):
     financial_params = selected_params
     # financial_params['cooldown_period'] = 1
     # financial_params['kelly_fraction'] = 0.5
-    financial_params['initial_balance'] = 50
+    financial_params['initial_balance'] = 500
     # financial_params['boost_factor'] = 10
     financial_params['basic_risk_mgmt'] = True
     
-    # 
+    # for prod
     if env == 'prod':
         financial_params['interval'] = '5m'  # for debugging
         financial_params['limit'] = 6 * 120
@@ -271,7 +271,6 @@ def on_open(ws):
         financial_params['symbols'] = select_cryptos(financial_params['target_num_symbols'] * 2, network='sepolia')
         financial_params['interval'] = '4h'  # for debugging
         financial_params['limit'] = 6 * 120
-        # financial_params['target_num_symbols'] = 50
         # financial_params['symbols'] = sorted(['BTC', 'ETH', 'SOL', 'NEAR', 'TIA', 'MANTA', 'SEI', 'IOTX', 'GMX', 'WIF'])
     
     
