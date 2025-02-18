@@ -25,15 +25,16 @@ financial_params = {
     'take_profit_max': 9,
     'risk_per_trade_min': 0.025,
     'risk_per_trade_max': 0.1,
-    'tp_mult_perc': 0.5,
+    'tp_mult_perc': 1,
     'sl_mult_perc': 0.2,
     'cooldown_period': 1,
     'trading_penalty': 0.5,
+    'holding_bonus': 0.5,
     'kelly_fraction': 0.5,
 }
 
 constant_params = {
-    'adjust_leverage': False,
+    # 'adjust_leverage': False,
     'risk_mgmt': 'fractals',
     'reverse_actions': False,
     'trading_fee': 0.008,  # 0.1% trading fee
@@ -92,9 +93,9 @@ basic_params = {
     'basic_risk_mgmt': True
 }
 
-field_interval = '1d'
-field_interval_model = '1d'
-field_target = 25
+field_interval = '4h'
+field_interval_model = '1h'
+field_target = 50
 field_version = 'conf'
 field_is_train_model = False
 
@@ -102,13 +103,20 @@ unittest_params = {
     'target_num_symbols': field_target,
     'market_data': 'original', # 'original' or 'random' or 'synthetic'
     'synth_mode': 'testing', # 'training' or 'testing'
-    'symbols': sorted(['ADA', 'BNB', 'EOS', 'ETH', 'IOTA', 'LTC', 'NEO', 'QTUM', 'XLM', 'XRP']),
+    # 'symbols': sorted(['ADA', 'BNB', 'EOS', 'ETH', 'IOTA', 'LTC', 'NEO', 'QTUM', 'XLM', 'XRP']),
     # 'symbols': sorted(['BTC', 'ETC', 'ICX', 'LINK', 'NULS', 'ONT', 'TRX', 'LTC', 'NEO', 'VET']),
     # 'symbols': sorted(['LTC', 'DOGE', 'SHIB', 'PEOPLE', 'FLOKI', 'PEPE', 'MEME', 'BONK', 'WIF', 'BOME']),
-    'end_time': '2021-05-31', #'2021-05-25', #random_date(start_date, end_date).strftime('%Y-%m-%d'),
-    'limit': 60, #350, #round(24 * 45), # 240,
+    'symbols': sorted([
+        "1INCH", "ALICE", "ANKR", "ANT", "ATOM", "AVA", "AVAX", "AXS", "BAL", "BAT",
+    "BCH", "BEAM", "BNB", "BNT", "BTC", "CAKE", "CELO", "CHZ", "COMP", "DASH",
+    "DOGE", "DOT", "ENJ", "FET", "FIL", "FTM", "FTT", "GRT", "HBAR", "HOT",
+    "INJ", "IOTX", "KAVA", "KSM", "LINK", "LRC", "LTC", "MANA", "MATIC", "MKR",
+        "NEAR", "NEO", "NMR", "OCEAN", "OM", "OMG", "QTUM", "REEF", "RSR", "RUNE"
+    ]),
+    'end_time': '2021-05-30', #'2021-05-25', #random_date(start_date, end_date).strftime('%Y-%m-%d'),
+    'limit': 6 * 50, #350, #round(24 * 45), # 240,
     'interval': field_interval,
-    # 'boost_factor': 20,
+    'boost_factor': 1,
     'model_name': f'model_ppo_crypto_trading_v{field_version}_n{field_target}_i{field_interval_model}',
     'basic_risk_mgmt': False
 }

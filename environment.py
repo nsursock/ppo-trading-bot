@@ -37,6 +37,7 @@ class TradingEnvironment(gym.Env):
         }
         
         self.previous_returns = [0] * len(self.params['symbols'])  # Initialize previous returns to zero for each symbol
+        self.holding_duration = [0] * len(self.params['symbols'])  # Initialize holding duration to zero for each symbol
         self.actions_available = ACTIONS_AVAILABLE
         
         # Ensure the environment supports rendering
@@ -332,6 +333,7 @@ class TradingEnvironment(gym.Env):
         if leverage < 35:
             logging.debug(f"Leverage is too low for symbol {symbol_index}. Returning None.")
             return None, None, None, None
+        leverage = leverage * self.params['boost_factor']
 
         # Compute SL, TP, and liquidation prices
         sl_price, tp_price, liq_price, max_price = self.compute_prices(symbol_index, type, current_price, leverage)
@@ -403,9 +405,14 @@ class TradingEnvironment(gym.Env):
         # Calculate return
         return_on_investment = pnl / collateral if collateral != 0 else 0
         
+        # Ensure current_step is within bounds
+        if self.current_step < len(self.timestamps):
+            close_time = exit_time if exit_time is not None else self.timestamps[self.current_step]
+        else:
+            logging.error(f"current_step {self.current_step} is out of bounds for timestamps with length {len(self.timestamps)}")
+            return
+
         # Ensure close_time is later than open_time
-        close_time = exit_time if exit_time is not None else self.timestamps[self.current_step]
-        # Convert both times to the same precision
         close_time = pd.to_datetime(close_time).floor('us')
         open_time = pd.to_datetime(position['open_time']).floor('us')
     

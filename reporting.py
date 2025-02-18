@@ -238,6 +238,22 @@ def compute_market_conditions(data_matrix, symbols, feature_index):
 
     return market_conditions
 
+def sortino(returns, target_return=0):
+    """Calculate the Sortino ratio of a series of returns."""
+    returns = np.array(returns)
+    downside_returns = returns[returns < target_return]
+    downside_std = np.std(downside_returns)
+    mean_return = np.mean(returns)
+    sortino_ratio = (mean_return - target_return) / downside_std * np.sqrt(252) if downside_std != 0 else 0
+    return sortino_ratio
+
+def calmar(returns):
+    """Calculate the Calmar ratio of a series of returns."""
+    annualized_return = np.mean(returns) * 252
+    max_dd = max_drawdown(returns)
+    calmar_ratio = annualized_return / max_dd if max_dd != 0 else 0
+    return calmar_ratio
+
 def display_stats(history, market_conditions, environment, save_path='net_profits.png'):
     # Convert history to a DataFrame
     history_df = pd.DataFrame(history)
@@ -264,10 +280,16 @@ def display_stats(history, market_conditions, environment, save_path='net_profit
     
     # Calculate average trade duration
     if 'open_time' in history_df.columns and 'close_time' in history_df.columns:
-        history_df['trade_duration'] = (history_df['close_time'] - history_df['open_time']).dt.total_seconds() / 3600  # Convert to hours
+        history_df['trade_duration'] = round((history_df['close_time'] - history_df['open_time']).dt.total_seconds() / 3600, 2)  # Convert to hours
         avg_trade_duration = history_df['trade_duration'].mean()
     else:
         avg_trade_duration = 'N/A'
+        
+    if 'risk_per_trade' in history_df.columns:
+        history_df['risk_per_trade'] = round(history_df['risk_per_trade'], 3)
+        
+    if 'balance' in history_df.columns:
+        history_df['balance'] = round(history_df['balance'], 2)
     
     # Print the history
     print(tabulate(history_df.drop(columns=columns_to_exclude).head(10), headers="keys", tablefmt="pretty", showindex=False))
@@ -295,8 +317,8 @@ def display_stats(history, market_conditions, environment, save_path='net_profit
     print("\nTop 5 Largest Gains:")
     print(tabulate(largest_gains.drop(columns=columns_to_exclude), headers="keys", tablefmt="pretty", showindex=False))
     
-    headers = ["Symbol", "Num Trades", "Win Rate (%)", "Avg Profit", "Avg Loss", "Net Profit", "Sharpe Ratio", "Max Drawdown", "Risk to Reward", "Num Tps", "Num Sls", "Num Liqs", "Num Maxs", "Avg Lev", "Avg Coll", "Avg Dur"]
-    colalign = ("left", "right", "right", "right", "right", "right", "right", "right", "right", "right", "right", "right", "right", "right", "right", "right")
+    headers = ["Symbol", "Num Trades", "Win Rate (%)", "Avg Profit", "Avg Loss", "Net Profit", "Sharpe Ratio", "Max Drawdown", "Risk to Reward", "Sortino Ratio", "Calmar Ratio", "Num Tps", "Num Sls", "Num Liqs", "Num Maxs", "Avg Lev", "Avg Coll", "Avg Dur"]
+    colalign = ("left", "right", "right", "right", "right", "right", "right", "right", "right", "right", "right", "right", "right", "right", "right", "right", "right", "right")
 
     if market_conditions:
         headers.extend(["Mu", "Sigma", "Condition"])
@@ -336,6 +358,8 @@ def display_stats(history, market_conditions, environment, save_path='net_profit
             'sharpe_ratio': f"{sharpe(group['return']):.3f}",
             'max_drawdown': f"{max_drawdown(group['return']):.3f}",
             'risk_to_reward': f"{risk_return_ratio(group['return']):.3f}",
+            'sortino_ratio': f"{sortino(group['return']):.3f}",
+            'calmar_ratio': f"{calmar(group['return']):.3f}",
             'num_tps': count_exit_reasons(group, 'tp'),
             'num_sls': count_exit_reasons(group, 'sl'),
             'num_liqs': count_exit_reasons(group, 'liq'),
@@ -366,6 +390,8 @@ def display_stats(history, market_conditions, environment, save_path='net_profit
             'sharpe_ratio': f"{sharpe(group['return']):.3f}",
             'max_drawdown': f"{max_drawdown(group['return']):.3f}",
             'risk_to_reward': f"{risk_return_ratio(group['return']):.3f}",
+            'sortino_ratio': f"{sortino(group['return']):.3f}",
+            'calmar_ratio': f"{calmar(group['return']):.3f}",
             'num_tps': count_exit_reasons(group, 'tp'),
             'num_sls': count_exit_reasons(group, 'sl'),
             'num_liqs': count_exit_reasons(group, 'liq'),
@@ -396,6 +422,8 @@ def display_stats(history, market_conditions, environment, save_path='net_profit
             'sharpe_ratio': f"{sharpe(group['return']):.3f}",
             'max_drawdown': f"{max_drawdown(group['return']):.3f}",
             'risk_to_reward': f"{risk_return_ratio(group['return']):.3f}",
+            'sortino_ratio': f"{sortino(group['return']):.3f}",
+            'calmar_ratio': f"{calmar(group['return']):.3f}",
             'num_tps': count_exit_reasons(group, 'tp'),
             'num_sls': count_exit_reasons(group, 'sl'),
             'num_liqs': count_exit_reasons(group, 'liq'),
@@ -426,6 +454,8 @@ def display_stats(history, market_conditions, environment, save_path='net_profit
             'sharpe_ratio': f"{sharpe(group['return']):.3f}",
             'max_drawdown': f"{max_drawdown(group['return']):.3f}",
             'risk_to_reward': f"{risk_return_ratio(group['return']):.3f}",
+            'sortino_ratio': f"{sortino(group['return']):.3f}",
+            'calmar_ratio': f"{calmar(group['return']):.3f}",
             'num_tps': count_exit_reasons(group, 'tp'),
             'num_sls': count_exit_reasons(group, 'sl'),
             'num_liqs': count_exit_reasons(group, 'liq'),
@@ -465,6 +495,8 @@ def display_stats(history, market_conditions, environment, save_path='net_profit
                 'sharpe_ratio': f"{sharpe(group['return']):.3f}",
                 'max_drawdown': f"{max_drawdown(group['return']):.3f}",
                 'risk_to_reward': f"{risk_return_ratio(group['return']):.3f}",
+                'sortino_ratio': f"{sortino(group['return']):.3f}",
+                'calmar_ratio': f"{calmar(group['return']):.3f}",
                 'num_tps': count_exit_reasons(group, 'tp'),
                 'num_sls': count_exit_reasons(group, 'sl'),
                 'num_liqs': count_exit_reasons(group, 'liq'),
@@ -493,6 +525,8 @@ def display_stats(history, market_conditions, environment, save_path='net_profit
                 'sharpe_ratio': f"{sharpe(group['return']):.3f}",
                 'max_drawdown': f"{max_drawdown(group['return']):.3f}",
                 'risk_to_reward': f"{risk_return_ratio(group['return']):.3f}",
+                'sortino_ratio': f"{sortino(group['return']):.3f}",
+                'calmar_ratio': f"{calmar(group['return']):.3f}",
                 'num_tps': count_exit_reasons(group, 'tp'),
                 'num_sls': count_exit_reasons(group, 'sl'),
                 'num_liqs': count_exit_reasons(group, 'liq'),
@@ -521,6 +555,8 @@ def display_stats(history, market_conditions, environment, save_path='net_profit
             'sharpe_ratio': f"{sharpe(symbol_data['return']):.3f}",
             'max_drawdown': f"{max_drawdown(symbol_data['return']):.3f}",
             'risk_to_reward': f"{risk_return_ratio(symbol_data['return']):.3f}",
+            'sortino_ratio': f"{sortino(symbol_data['return']):.3f}",
+            'calmar_ratio': f"{calmar(symbol_data['return']):.3f}",
             'num_tps': count_exit_reasons(symbol_data, 'tp'),
             'num_sls': count_exit_reasons(symbol_data, 'sl'),
             'num_liqs': count_exit_reasons(symbol_data, 'liq'),
@@ -559,6 +595,8 @@ def display_stats(history, market_conditions, environment, save_path='net_profit
         'sharpe_ratio': f"{sharpe(history_df['return']):.3f}",
         'max_drawdown': f"{max_drawdown(history_df['return']):.3f}",
         'risk_to_reward': f"{risk_return_ratio(history_df['return']):.3f}",
+        'sortino_ratio': f"{sortino(history_df['return']):.3f}",
+        'calmar_ratio': f"{calmar(history_df['return']):.3f}",
         'num_tps': count_exit_reasons(history_df, 'tp'),
         'num_sls': count_exit_reasons(history_df, 'sl'),
         'num_liqs': count_exit_reasons(history_df, 'liq'),

@@ -378,7 +378,11 @@ def preprocess_data(target_num_symbols=10, symbols=['BTC', 'ETH'], interval='1d'
         dataframes[symbol] = df.iloc[-limit:]
     
     logging.debug(f"Valid symbols after filtering: {valid_symbols}")
-    valid_symbols = sorted(valid_symbols)[:target_num_symbols]
+    # valid_symbols = sorted(valid_symbols)[:target_num_symbols]
+    
+    # Randomly sample target_num_symbols from valid_symbols
+    valid_symbols = sorted(random.sample(valid_symbols, min(target_num_symbols, len(valid_symbols))))
+
     logging.debug(f"Selected valid symbols: {valid_symbols}")
     df = {symbol: dataframes[symbol] for symbol in valid_symbols}
     

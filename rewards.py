@@ -55,7 +55,7 @@ def calculate_short_term_reward(self, action):
         logging.error(traceback.format_exc())
         return None
 
-def calculate_combined_reward(self):
+def calculate_combined_reward(self, action):
     try:
         current_prices = self.data_matrix[self.current_step, :, self.mapping['close']]
         reward = 0
@@ -135,6 +135,9 @@ def calculate_consecutive_pnl_reward(self, action):
         # Initialize rate_of_change
         rate_of_change = 0
 
+        # Initialize holding duration
+        holding_duration = self.holding_duration if hasattr(self, 'holding_duration') else [0] * self.num_symbols
+
         for i in range(self.num_symbols):
             position = self.positions[i]
             if position:
@@ -156,8 +159,10 @@ def calculate_consecutive_pnl_reward(self, action):
                 # Update consecutive positive PnL count
                 if pnl[i] > 0:
                     consecutive_positive_pnls[i] += 1 * rate_of_change
+                    holding_duration[i] += 1  # Increase holding duration for profitable trades
                 else:
                     consecutive_positive_pnls[i] = 0
+                    holding_duration[i] = 0  # Reset holding duration for non-profitable trades
 
                 # Reward based on rate of change
                 # reward += rate_of_change
@@ -165,17 +170,19 @@ def calculate_consecutive_pnl_reward(self, action):
                 # Update previous return
                 previous_returns[i] = current_return
 
-        # Calculate reward based on consecutive positive PnLs
-        reward += sum(consecutive_positive_pnls)  # Sum of all streaks
+        # Calculate reward based on consecutive positive PnLs and holding duration
+        # Increase the multiplier for holding duration to further encourage holding
+        reward += sum(consecutive_positive_pnls[i] * (1 + holding_duration[i] * float(self.params['holding_bonus'])) for i in range(self.num_symbols))  # Increase reward for longer holding
 
         # Introduce a penalty for trading activity
         trading_penalty = sum(1 for action_value in action if action_value != 0) * float(self.params['trading_penalty'])
         reward -= trading_penalty
 
-        # Store previous returns for the next step
+        # Store previous returns and holding duration for the next step
         self.previous_returns = previous_returns
+        self.holding_duration = holding_duration
 
-        logging.debug(f"Computing consecutive PnL reward: {reward} with streaks {consecutive_positive_pnls} and rate of change {rate_of_change}")
+        logging.debug(f"Computing consecutive PnL reward: {reward} with streaks {consecutive_positive_pnls}, rate of change {rate_of_change}, and holding duration {holding_duration}")
 
         return reward
 

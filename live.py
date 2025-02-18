@@ -140,6 +140,11 @@ def on_message(ws, message):
                         current_window[symbol] = current_window[symbol].sort_values(by='timestamp').drop_duplicates(subset=['timestamp'], keep='last')
                         current_window[symbol].set_index('timestamp', inplace=True)
                         
+                        # if current_window[symbol] length is financial_params['limit'] - 1
+                        if len(current_window[symbol]) == financial_params['limit'] - 1:
+                            # duplicate the first row
+                            current_window[symbol] = pd.concat([current_window[symbol].iloc[0:1], current_window[symbol]], axis=0)
+                        
                         current_window[symbol] = add_technical_indicators(current_window[symbol])
                         
                         logging.info(f"Updated current window for symbol {symbol}: {len(current_window[symbol])} candles")  # Debug level log for window update
@@ -251,22 +256,22 @@ def on_open(ws):
     # close_all_open_trades()
     
     financial_params = selected_params
-    financial_params['cooldown_period'] = 1
+    # financial_params['cooldown_period'] = 1
     # financial_params['kelly_fraction'] = 0.5
-    financial_params['initial_balance'] = 500
+    financial_params['initial_balance'] = 50
     # financial_params['boost_factor'] = 10
     financial_params['basic_risk_mgmt'] = True
     
     # 
     if env == 'prod':
-        financial_params['interval'] = '4h'  # for debugging
-        financial_params['limit'] = 288
-        financial_params['symbols'] = sorted(['BTC', 'ETH', 'SOL', 'NEAR', 'TIA', 'MANTA', 'SEI', 'IOTX', 'GMX', 'TAO'])
+        financial_params['interval'] = '5m'  # for debugging
+        financial_params['limit'] = 6 * 120
+        financial_params['symbols'] = select_cryptos(financial_params['target_num_symbols'] * 2) #sorted(['BTC', 'ETH', 'SOL', 'NEAR', 'TIA', 'MANTA', 'SEI', 'IOTX', 'GMX', 'TAO'])
     else:
         financial_params['symbols'] = select_cryptos(financial_params['target_num_symbols'] * 2, network='sepolia')
         financial_params['interval'] = '4h'  # for debugging
         financial_params['limit'] = 6 * 120
-        # financial_params['target_num_symbols'] = 25
+        # financial_params['target_num_symbols'] = 50
         # financial_params['symbols'] = sorted(['BTC', 'ETH', 'SOL', 'NEAR', 'TIA', 'MANTA', 'SEI', 'IOTX', 'GMX', 'WIF'])
     
     
