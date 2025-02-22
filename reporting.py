@@ -355,7 +355,7 @@ def display_stats(history, market_conditions, environment, save_path='net_profit
             'avg_profit': f"{avg_profit(group['pnl']):,.2f}",
             'avg_loss': f"{avg_loss(group['pnl']):,.2f}",
             'net_profit': f"{net_profit(group['pnl']):,.2f}",
-            'sharpe_ratio': f"{sharpe(group['return']):.3f}",
+            'sharpe_ratio': f"{sharpe(group['return']):,.3f}",  # Store as a float for sorting
             'max_drawdown': f"{max_drawdown(group['return']):.3f}",
             'risk_to_reward': f"{risk_return_ratio(group['return']):.3f}",
             'sortino_ratio': f"{sortino(group['return']):.3f}",
@@ -370,6 +370,7 @@ def display_stats(history, market_conditions, environment, save_path='net_profit
         }
         symbol_stats.append(stats)
     
+    # Convert to DataFrame for display
     symbol_stats_df = pd.DataFrame(symbol_stats)
     print("\nStats by Symbol:")
     print(tabulate(symbol_stats_df, headers="keys", tablefmt="pretty", showindex=False))
@@ -580,6 +581,9 @@ def display_stats(history, market_conditions, environment, save_path='net_profit
                         stats['condition'] = description
 
     crypto_stats_df = pd.DataFrame(crypto_stats)
+    
+    # Sort symbol_stats by sharpe_ratio in descending order
+    crypto_stats_df = crypto_stats_df.sort_values(by='sharpe_ratio', key=lambda x: x.astype(float), ascending=False)
     
     print("\nCrypto Stats:")
     print(tabulate(crypto_stats_df, headers=headers, tablefmt="pretty", colalign=colalign, showindex=False))

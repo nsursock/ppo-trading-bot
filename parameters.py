@@ -18,7 +18,7 @@ financial_params = {
     'leverage_min': 2,
     'leverage_max': 150,
     'collateral_min': 5,
-    'collateral_max': 5_000_000,
+    'collateral_max': 5_000_000_000,
     'stop_loss_min': 0.01,
     'stop_loss_max': 0.5,
     'take_profit_min': 0.1,

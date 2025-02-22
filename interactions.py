@@ -372,8 +372,8 @@ def close_trade(nonce, trade_index, expected_price, is_long, slippage_tolerance=
         send_error_email("Unexpected Error", f"An unexpected error occurred: {e}")
         print(f"An unexpected error occurred: {e}")
         
-def fetch_symbols():
-    response = requests.get(os.getenv('GAINS_NETWORK_URL'))
+def fetch_symbols(network='arbitrum'):
+    response = requests.get(f"https://backend-{network}.gains.trade/trading-variables")
     pairs = response.json()['pairs']
     return [{'symbol': pair['from'], 'index': idx, 'groupIndex': pair['groupIndex']} for idx, pair in enumerate(pairs)]
 

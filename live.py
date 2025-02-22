@@ -182,39 +182,10 @@ def on_message(ws, message):
                     )
                     logging.info(f"Number of orders: {len(infos['orders'])} \n Orders:\n{orders_table}")
                     
+                    # move the code below to a separate thread
                     # After the environment step
-                    for symbol, info in infos['orders'].items():
-                        logging.info('----------------------------------------------------------------------')
-                        current_trades = fetch_open_trades(symbol)
-                        trade_type = info.get('type')
-                        nonce = get_nonce()
-                        # Fetch the latest price for the symbol using CCXT
-                        exchange = ccxt.binance()
-                        ticker = exchange.fetch_ticker(symbol + '/USDT')
-                        latest_price = ticker['last']  # Get the last price from the ticker
-
-                        if trade_type in ['open_long', 'open_short']:
-                            if current_trades:  # Close the latest trade if it exists
-                                latest_trade = current_trades[0]
-                                symbol, trade_index, is_long = latest_trade
-                                close_trade(nonce, trade_index, latest_price, is_long)
-                                nonce += 1
-                            
-                            open_trade(nonce, latest_price, fetch_symbols(), symbol, trade_type, round(info.get('collateral')), round(info.get('leverage')), info.get('tp_price'), info.get('sl_price'))
-                            nonce += 1
-                            logging.info(f"Opened {trade_type} for {symbol} with latest price {latest_price} and info {info}")
-                            
-                        elif trade_type == 'close' and current_trades:  # Close trades if they exist
-                            latest_trade = current_trades[0]
-                            symbol, trade_index, is_long = latest_trade
-                            close_trade(nonce, trade_index, latest_price, is_long)
-                            nonce += 1
-                            logging.info(f"Closed {trade_type} for {symbol} with info {info}")
-                        else:
-                            logging.info(f"No action required for {symbol} with type {trade_type}")
-
-                        # logging.info(f"Executed trade for {symbol} with type {trade_type} and info {info}")
-
+                    threading.Thread(target=process_orders, args=(infos,), daemon=True).start()
+                    
                     # Prepare pretty-printed positions for email
                     positions_table = tabulate(
                         [{"key": live_env.envs[0].get_wrapper_attr('params')['symbols'][idx], **{k: v for k, v in position.items() if k in ["open_time", "type", "entry_price", "leverage", "collateral"]}} for idx, position in enumerate(infos['stats']['positions'])],
@@ -258,7 +229,7 @@ def on_open(ws):
     financial_params = selected_params
     # financial_params['cooldown_period'] = 1
     # financial_params['kelly_fraction'] = 0.5
-    financial_params['initial_balance'] = 500
+    financial_params['initial_balance'] = 200
     # financial_params['boost_factor'] = 10
     financial_params['basic_risk_mgmt'] = True
     
@@ -266,11 +237,12 @@ def on_open(ws):
     if env == 'prod':
         financial_params['interval'] = '5m'  # for debugging
         financial_params['limit'] = 6 * 120
-        financial_params['symbols'] = select_cryptos(financial_params['target_num_symbols'] * 2) #sorted(['BTC', 'ETH', 'SOL', 'NEAR', 'TIA', 'MANTA', 'SEI', 'IOTX', 'GMX', 'TAO'])
+        financial_params['symbols'] = sorted(['GRASS', 'PLUME', 'PONKE', 'VINE', 'ZEUS', 'HYPE', 'ARK', 'APT', 'APU', 'VVV'])
+        # financial_params['symbols'] = select_cryptos(financial_params['target_num_symbols'] * 2) #sorted(['BTC', 'ETH', 'SOL', 'NEAR', 'TIA', 'MANTA', 'SEI', 'IOTX', 'GMX', 'TAO'])
     else:
         financial_params['symbols'] = select_cryptos(financial_params['target_num_symbols'] * 2, network='sepolia')
         financial_params['interval'] = '4h'  # for debugging
-        financial_params['limit'] = 6 * 120
+        financial_params['limit'] = 6 * 100
         # financial_params['symbols'] = sorted(['BTC', 'ETH', 'SOL', 'NEAR', 'TIA', 'MANTA', 'SEI', 'IOTX', 'GMX', 'WIF'])
     
     
@@ -385,6 +357,37 @@ def stop_loss_listener():
 
         # Wait for 5 minutes before running again
         time.sleep(300)
+
+def process_orders(infos):
+    for symbol, info in infos['orders'].items():
+        logging.info('----------------------------------------------------------------------')
+        current_trades = fetch_open_trades(symbol)
+        trade_type = info.get('type')
+        nonce = get_nonce()
+        # Fetch the latest price for the symbol using CCXT
+        exchange = ccxt.binance()
+        ticker = exchange.fetch_ticker(symbol + '/USDT')
+        latest_price = ticker['last']  # Get the last price from the ticker
+
+        if trade_type in ['open_long', 'open_short']:
+            if current_trades:  # Close the latest trade if it exists
+                latest_trade = current_trades[0]
+                symbol, trade_index, is_long = latest_trade
+                close_trade(nonce, trade_index, latest_price, is_long)
+                nonce += 1
+
+            open_trade(nonce, latest_price, fetch_symbols(), symbol, trade_type, round(info.get('collateral')), round(info.get('leverage')), info.get('tp_price'), info.get('sl_price'))
+            nonce += 1
+            logging.info(f"Opened {trade_type} for {symbol} with latest price {latest_price} and info {info}")
+
+        elif trade_type == 'close' and current_trades:  # Close trades if they exist
+            latest_trade = current_trades[0]
+            symbol, trade_index, is_long = latest_trade
+            close_trade(nonce, trade_index, latest_price, is_long)
+            nonce += 1
+            logging.info(f"Closed {trade_type} for {symbol} with info {info}")
+        else:
+            logging.info(f"No action required for {symbol} with type {trade_type}")
 
 if __name__ == "__main__":
     from utilities import send_error_email
