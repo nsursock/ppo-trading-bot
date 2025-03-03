@@ -11,6 +11,8 @@ import glob
 import cProfile
 import pstats
 
+import os
+
 class TradingEnvironment(gym.Env):
     def __init__(self, data_matrix, timestamps, mapping, render_mode='human', params=None, reward_function=None, market_data=None, live_mode=False):
         super(TradingEnvironment, self).__init__()
@@ -99,9 +101,20 @@ class TradingEnvironment(gym.Env):
         if self.data_matrix.size == 0:
             raise ValueError("Data matrix is empty. Ensure data is loaded correctly before resetting the environment.")
         
+        # Validate and align data_matrix and timestamps dimensions
+        if len(self.timestamps) != self.data_matrix.shape[0]:
+            logging.warning(f"Mismatch between timestamps length ({len(self.timestamps)}) and data_matrix first dimension ({self.data_matrix.shape[0]})")
+            # Trim data_matrix to match timestamps length
+            if len(self.timestamps) < self.data_matrix.shape[0]:
+                logging.info("Trimming data_matrix to match timestamps length")
+                self.data_matrix = self.data_matrix[:len(self.timestamps), :, :]
+            else:
+                logging.info("Trimming timestamps to match data_matrix length") 
+                self.timestamps = self.timestamps[:self.data_matrix.shape[0]]
+
         # Set current_step based on live_mode
         if self.live_mode:
-            self.current_step = len(self.data_matrix) - 1  # Start at the last step for live mode
+            self.current_step = len(self.data_matrix) - 1  # Start at the last valid step for live mode
         else:
             self.current_step = 0  # Start at the beginning for backtesting
 
@@ -304,9 +317,10 @@ class TradingEnvironment(gym.Env):
         return win_probability, win_loss_ratio
 
     def open_position(self, symbol_index, type, current_price):
-        # if self.cooldowns[symbol_index] > 0:
-        #     logging.debug(f"Cannot open position for symbol {symbol_index} due to cooldown.")
-        #     return None, None, None, None  # Ensure a tuple is returned
+        # Add bounds check at the start - subtract 1 from length since arrays are 0-based
+        if self.current_step >= len(self.timestamps):
+            logging.warning(f"Cannot open position: current_step {self.current_step} >= timestamps length {len(self.timestamps)}")
+            return None, None, None, None
 
         # Calculate win probability and win/loss ratio from history
         win_probability, win_loss_ratio = self.calculate_trade_statistics()
@@ -592,13 +606,29 @@ class TradingEnvironment(gym.Env):
         
         logging.info(f"Fetching 1s (more granular) market data for risk management")
 
+        # Get market data path from environment variable with proper fallback
+        market_data_path = os.getenv('MARKET_DATA_PATH')
+        if not market_data_path:
+            # Try the default path
+            default_path = '/Volumes/LASSIE/market_data'
+            if os.path.exists(default_path):
+                market_data_path = default_path
+                logging.warning(f"MARKET_DATA_PATH not set, using default path: {default_path}")
+            else:
+                raise ValueError("MARKET_DATA_PATH environment variable is not set and default path does not exist. "
+                               "Please set MARKET_DATA_PATH to the directory containing market data files.")
+
         for symbol_index, symbol in enumerate(self.params['symbols']):
             logging.info(f"Fetching market data for symbol: {symbol}")
             # Construct the directory path for the symbol
-            directory_path = f"market_data/{symbol}/"
+            directory_path = os.path.join(market_data_path, symbol)
+            
+            # Check if directory exists
+            if not os.path.exists(directory_path):
+                raise ValueError(f"Market data directory not found for symbol {symbol}: {directory_path}")
             
             # Use glob to find files matching the date range
-            files = glob.glob(f"{directory_path}*.csv")
+            files = glob.glob(os.path.join(directory_path, "*.csv"))
             
             # Debugging: Print the list of files found
             logging.debug(f"Files found for symbol {symbol}: {files}")
@@ -803,11 +833,34 @@ class TradingEnvironment(gym.Env):
         return result
 
     def step(self, action):
+        # Add bounds check at the start - subtract 1 from length since arrays are 0-based
+        if self.current_step >= len(self.timestamps):
+            logging.warning(f"Reached end of data: current_step {self.current_step} >= timestamps length {len(self.timestamps)}")
+            return self.next_observation(), 0, True, True, {
+                'orders': {},
+                'stats': {
+                    'balance': self.balance,
+                    'net_worth': self.net_worth,
+                    'positions': self.positions
+                }
+            }
+
         # Get the current low and high prices for all symbols
-        low_prices = self.data_matrix[self.current_step, :, self.mapping['low']]
-        high_prices = self.data_matrix[self.current_step, :, self.mapping['high']]
-        current_prices = self.data_matrix[self.current_step, :, self.mapping['close']]
-        
+        try:
+            low_prices = self.data_matrix[self.current_step, :, self.mapping['low']]
+            high_prices = self.data_matrix[self.current_step, :, self.mapping['high']]
+            current_prices = self.data_matrix[self.current_step, :, self.mapping['close']]
+        except IndexError as e:
+            logging.error(f"Index error accessing data_matrix at step {self.current_step}: {e}")
+            return self.next_observation(), 0, True, True, {
+                'orders': {},
+                'stats': {
+                    'balance': self.balance,
+                    'net_worth': self.net_worth,
+                    'positions': self.positions
+                }
+            }
+
         infos = {
             'orders': {},  # Initialize orders section
             'stats': {}    # Initialize stats section
@@ -887,7 +940,7 @@ class TradingEnvironment(gym.Env):
         #         self.handle_risk_management_1s(i) #low_prices[i], high_prices[i])
 
         # Check if the episode is done
-        max_steps_reached = self.current_step >= self.data_matrix.shape[0] - 1
+        max_steps_reached = self.current_step >= len(self.timestamps) - 1  # Last valid index is len-1
         net_worth_below_min = self.net_worth < self.params['collateral_min']
         done = (max_steps_reached or net_worth_below_min) and not self.live_mode
 
