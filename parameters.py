@@ -93,7 +93,7 @@ basic_params = {
     'basic_risk_mgmt': True
 }
 
-field_interval = '1h'
+field_interval = '4h'
 field_interval_model = '1h'
 field_target = 50
 field_version = 'conf'
@@ -107,14 +107,23 @@ unittest_params = {
     # 'symbols': sorted(['BTC', 'ETC', 'ICX', 'LINK', 'NULS', 'ONT', 'TRX', 'LTC', 'NEO', 'VET']),
     # 'symbols': sorted(['LTC', 'DOGE', 'SHIB', 'PEOPLE', 'FLOKI', 'PEPE', 'MEME', 'BONK', 'WIF', 'BOME']),
     'symbols': sorted([
-        "1INCH", "ALICE", "ANKR", "ANT", "ATOM", "AVA", "AVAX", "AXS", "BAL", "BAT",
-    "BCH", "BEAM", "BNB", "BNT", "BTC", "CAKE", "CELO", "CHZ", "COMP", "DASH",
-    "DOGE", "DOT", "ENJ", "FET", "FIL", "FTM", "FTT", "GRT", "HBAR", "HOT",
-    "INJ", "IOTX", "KAVA", "KSM", "LINK", "LRC", "LTC", "MANA", "MATIC", "MKR",
-        "NEAR", "NEO", "NMR", "OCEAN", "OM", "OMG", "QTUM", "REEF", "RSR", "RUNE"
+        "AIXBT", "SOLV", "LDO", "BANANA", "FTT", "HBAR", "CATI", "ACX", "ARKM", "CVC",  
+        "SEI", "BIO", "MAGIC", "XLM", "LINK", "BNT", "RUNE", "PENDLE", "SAGA", "BOME",  
+        "SYN", "PYTH", "OP", "MATIC", "AVAX", "ATOM", "NEAR", "GRT", "APT", "DOGE",  
+        "SHIB", "ARB", "DYDX", "JUP", "INJ", "GMX", "SNX", "UNI", "AAVE", "COMP",  
+        "CRV", "SUSHI", "RAY", "MNGO", "ZETA", "ORCA", "BONK", "WOO", "HNT", "STX"
     ]),
-    'end_time': '2021-05-30', #'2021-05-25', #random_date(start_date, end_date).strftime('%Y-%m-%d'),
-    'limit': 24 * 40, #350, #round(24 * 45), # 240,
+
+
+    # 'symbols': sorted([
+    #     "1INCH", "ALICE", "ANKR", "ANT", "ATOM", "AVA", "AVAX", "AXS", "BAL", "BAT",
+    # "BCH", "BEAM", "BNB", "BNT", "BTC", "CAKE", "CELO", "CHZ", "COMP", "DASH",
+    # "DOGE", "DOT", "ENJ", "FET", "FIL", "FTM", "FTT", "GRT", "HBAR", "HOT",
+    # "INJ", "IOTX", "KAVA", "KSM", "LINK", "LRC", "LTC", "MANA", "MATIC", "MKR",
+    #     "NEAR", "NEO", "NMR", "OCEAN", "OM", "OMG", "QTUM", "REEF", "RSR", "RUNE"
+    # ]),
+    'end_time': None, #'2021-05-30', #'2021-05-25', #random_date(start_date, end_date).strftime('%Y-%m-%d'),
+    'limit': 6 * 40, #350, #round(24 * 45), # 240,
     'interval': field_interval,
     'boost_factor': 1,
     'model_name': f'model_ppo_crypto_trading_v{field_version}_n{field_target}_i{field_interval_model}',

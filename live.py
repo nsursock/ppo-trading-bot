@@ -227,18 +227,18 @@ def on_open(ws):
     # close_all_open_trades()
     
     financial_params = selected_params
-    # financial_params['cooldown_period'] = 1
+    financial_params['cooldown_period'] = 4
     # financial_params['kelly_fraction'] = 0.5
-    financial_params['initial_balance'] = 150
+    financial_params['initial_balance'] = 50
     # financial_params['boost_factor'] = 10
     financial_params['basic_risk_mgmt'] = True
     
     # for prod
     if env == 'prod':
-        financial_params['interval'] = '5m'  # for debugging
-        financial_params['limit'] = 6 * 120
-        financial_params['symbols'] = sorted(['GRASS', 'PLUME', 'PONKE', 'VINE', 'ZEUS', 'HYPE', 'ARK', 'APT', 'APU', 'VVV'])
-        # financial_params['symbols'] = select_cryptos(financial_params['target_num_symbols'] * 2) #sorted(['BTC', 'ETH', 'SOL', 'NEAR', 'TIA', 'MANTA', 'SEI', 'IOTX', 'GMX', 'TAO'])
+        financial_params['interval'] = '1h'  # for debugging
+        financial_params['limit'] = 24 * 40
+        # financial_params['symbols'] = sorted(['GRASS', 'PLUME', 'PONKE', 'VINE', 'ZEUS', 'HYPE', 'ARK', 'APT', 'APU', 'VVV'])
+        financial_params['symbols'] = select_cryptos(financial_params['target_num_symbols'] * 2) #sorted(['BTC', 'ETH', 'SOL', 'NEAR', 'TIA', 'MANTA', 'SEI', 'IOTX', 'GMX', 'TAO'])
     else:
         financial_params['symbols'] = select_cryptos(financial_params['target_num_symbols'] * 2, network='sepolia')
         financial_params['interval'] = '1h'  # for debugging
